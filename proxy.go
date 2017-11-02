@@ -58,6 +58,7 @@ func (s *dockerProxy) eachConn(tc net.Conn) {
 		uc.Close()
 		return
 	}
+	// TODO: we need to intercept these, to add the labels to specific run API calls.
 	go io.Copy(tc, uc)
 	go io.Copy(uc, tc)
 }
