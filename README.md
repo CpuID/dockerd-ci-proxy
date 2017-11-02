@@ -25,6 +25,8 @@ Another approach to this is for the native Docker client to support default labe
 
 This won't reserve capacity on the container scheduler (eg. ECS)... which won't be amazing :s
 
+One potential workaround is just use `ECS_RESERVED_MEMORY` on the ECS agent to reserve say 25% of all memory for non-ECS stuff, eg. spawned containers? and adjust the % based on usage patterns?
+
 # Usage
 
 
