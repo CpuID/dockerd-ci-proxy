@@ -21,6 +21,10 @@ The same rule goes for:
 
 Another approach to this is for the native Docker client to support default labels in the client config files. Requested upstream [here](https://github.com/moby/moby/issues/33644) - this will only cover using the official Docker CLI client and not alternate clients that talk to the same UNIX socket, which this project would cover.
 
+# Shortcomings
+
+This won't reserve capacity on the container scheduler (eg. ECS)... which won't be amazing :s
+
 # Usage
 
 
