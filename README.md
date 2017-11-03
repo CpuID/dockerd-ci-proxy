@@ -27,6 +27,8 @@ This won't reserve capacity on the container scheduler (eg. ECS)... which won't 
 
 One potential workaround is just use `ECS_RESERVED_MEMORY` on the ECS agent to reserve say 25% of all memory for non-ECS stuff, eg. spawned containers? and adjust the % based on usage patterns?
 
+Maybe also consider using a parent cgroup as a "memory pool" for all these random containers, as a way to avoid collateral damage from OOMs? eg. the 25% reserved gets applied to the "parent cgroup", and all containers spawned get thrown in that.
+
 # Usage
 
 
