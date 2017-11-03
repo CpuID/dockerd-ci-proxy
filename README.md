@@ -29,6 +29,19 @@ One potential workaround is just use `ECS_RESERVED_MEMORY` on the ECS agent to r
 
 Maybe also consider using a parent cgroup as a "memory pool" for all these random containers, as a way to avoid collateral damage from OOMs? eg. the 25% reserved gets applied to the "parent cgroup", and all containers spawned get thrown in that.
 
+Concept seems to work:
+
+```
+cd /sys/fs/cgroup/memory
+mkdir testcontainergroup
+cd testcontainergroup
+echo 134217728 > memory.limit_in_bytes
+docker run -it --rm --test-cgroup=/testcontainergroup/ alpine:3.6 sh
+(run something that consumes memory, and it should max out about 128MB)
+```
+
+Note: `docker stats` will still show the unconstrained memory threshold, not the parent cgroup limit.
+
 # Usage
 
 
