@@ -12,7 +12,7 @@ At this point, your container scheduler knows about all containers that are star
 
 ## Labels
 
-By putting a UNIX socket proxy between the volume mapping, we can add extra Docker labels to all newly created images or containers, allowing for reaping/GC by existing methods (eg. `docker container prune --filter 'labelname=xyz'`, or alternate approaches for running containers). There is currently no native capability to force adding labels for all operations by a single Docker client.
+By putting a UNIX socket proxy between the volume mapping, we can add extra Docker labels to all newly created images or containers, allowing for reaping/GC by existing methods (eg. `docker container prune --filter 'labelname=xyz'`, or alternate approaches for running containers). There is currently no native capability to force adding labels for all operations by a single Docker API client.
 
 The same rule goes for:
 
@@ -52,7 +52,9 @@ Note: `docker stats` will still show the unconstrained memory threshold, not the
 
 # Usage
 
+```
 
+```
 
 # License
 

@@ -58,8 +58,13 @@ func (s *dockerProxy) eachConn(tc net.Conn) {
 		uc.Close()
 		return
 	}
-	// TODO: we need to intercept these, to add the labels to specific run API calls.
-	go io.Copy(tc, uc)
+
+	// Passthrough requests to Docker daemon, testing use only
+	// go io.Copy(tc, uc)
+	// Intercept/MITM the requests to Docker daemon
+	go mitmDockerApiCall(tc, uc)
+
+	// Response is propagated unmodified from upstream Docker socket to client
 	go io.Copy(uc, tc)
 }
 

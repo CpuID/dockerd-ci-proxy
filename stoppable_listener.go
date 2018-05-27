@@ -1,7 +1,7 @@
 package main
 
 import (
-	"errors"
+	"fmt"
 	"net"
 	"time"
 )
@@ -17,7 +17,7 @@ type stoppableUnixListener struct {
 func newStoppableUnixListener(listener net.Listener) (*stoppableUnixListener, error) {
 	new_listener, ok := listener.(*net.UnixListener)
 	if !ok {
-		return nil, errors.New("Cannot wrap UNIX listener")
+		return nil, fmt.Errorf("Cannot wrap UNIX listener")
 	}
 
 	retval := &stoppableUnixListener{}
@@ -37,7 +37,7 @@ func (sl *stoppableUnixListener) Accept() (net.Conn, error) {
 		// Check for the channel being closed
 		select {
 		case <-sl.stop:
-			return nil, errors.New("Listener Stopped")
+			return nil, fmt.Errorf("Listener Stopped")
 		default:
 			// If the channel is still open, continue as normal
 		}
