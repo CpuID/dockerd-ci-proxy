@@ -43,12 +43,12 @@ func DockerProxyMockTest(t *testing.T) {
 	// Make a connection to the proxy, to fire off some commands
 	c, err := net.Dial("unix", "", "/tmp/echo.sock")
 	if err != nil {
-		panic(err.String())
+		panic(err.Error())
 	}
 	for {
 		_, err := c.Write([]byte("hi\n"))
 		if err != nil {
-			println(err.String())
+			println(err.Error())
 		}
 		time.Sleep(1e9)
 	}
