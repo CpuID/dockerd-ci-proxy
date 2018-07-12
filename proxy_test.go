@@ -41,7 +41,7 @@ func DockerProxyMockTest(t *testing.T) {
 	<-ready
 
 	// Make a connection to the proxy, to fire off some commands
-	c, err := net.Dial("unix", "", "/tmp/echo.sock")
+	c, err := net.Dial("unix", "/tmp/echo.sock")
 	if err != nil {
 		panic(err.Error())
 	}
