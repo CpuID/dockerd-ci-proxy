@@ -1,12 +1,16 @@
 package main
 
 import (
+	//"context"
+	"fmt"
 	"log"
+	"net"
+	"net/http"
 	"os"
-	"os/signal"
+	//"os/signal"
 	"path/filepath"
-	"sync"
-	"time"
+	//"sync"
+	//"time"
 
 	"github.com/CpuID/atexit"
 	"gopkg.in/urfave/cli.v1"
@@ -37,8 +41,8 @@ func main() {
 
 	app.Action = func(c *cli.Context) error {
 		// Trap SIGINT for Ctrl+C
-		c_sig := make(chan os.Signal, 1)
-		signal.Notify(c_sig, os.Interrupt)
+		// c_sig := make(chan os.Signal, 1)
+		// signal.Notify(c_sig, os.Interrupt)
 
 		// Default before it's set correctly
 		listen_socket_full_path := "NONE"
@@ -59,8 +63,27 @@ func main() {
 			}
 		})
 
+		// HTTP client, used by all requests to Docker daemon UNIX socket
+		// Credit: https://gist.github.com/teknoraver/5ffacb8757330715bcbcc90e6d46ac74
+		/*httpc := http.Client{
+			Transport: &http.Transport{
+				DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
+					return net.Dial("unix", c.String("dockersocket"))
+				},
+			},
+		}*/
+		l, err := net.Listen("unix", listen_socket_full_path)
+		if err != nil {
+			log.Fatalf("dockerd CI Proxy - Initial UNIX Listen Error: %s\n", err.Error())
+		}
+
+		log.Fatal(http.Serve(l, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			log.Printf("REQUEST: %+v", r)
+			fmt.Fprintf(w, "hello, you've hit %s\n", r.URL.Path)
+		})))
+
 		// Start the Docker Socket Proxy
-		docker_proxy := dockerProxy{
+		/*docker_proxy := dockerProxy{
 			ListenSocket: c.String("listensocket"),
 			TargetSocket: c.String("dockersocket"),
 		}
@@ -68,9 +91,10 @@ func main() {
 		ready := make(chan int)
 		wg.Add(1)
 		go docker_proxy.runProxy(&wg, ready)
+		*/
 
 		// SIGINT handler
-		go func() {
+		/*go func() {
 			// Block waiting for channel "c" to receive the signal.
 			<-c_sig
 			log.Println("Caught SIGINT, cleaning up...")
@@ -78,16 +102,16 @@ func main() {
 			docker_proxy.StoppableListener.Stop()
 			wg.Wait()
 			atexit.Exit(2)
-		}()
+		}()*/
 
-		// Channel notificatio comes in once the listen socket is ready to receive requests.
-		<-ready
-		log.Printf("Listening on '%s' for Docker API requests", listen_socket_full_path)
+		// Channel notification comes in once the listen socket is ready to receive requests.
+		//<-ready
+		//log.Printf("Listening on '%s' for Docker API requests", listen_socket_full_path)
 
 		// Sleep indefinitely, until a SIGINT signal is received
-		for {
-			time.Sleep(2 * time.Second)
-		}
+		//for {
+		//	time.Sleep(2 * time.Second)
+		//}
 
 		return nil
 	}

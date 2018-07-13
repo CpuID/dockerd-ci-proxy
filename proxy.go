@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"net"
+	//"net/http"
 	"sync"
 )
 
@@ -18,17 +19,19 @@ type dockerProxy struct {
 }
 
 func (s *dockerProxy) runProxy(wg *sync.WaitGroup, ready chan<- int) {
-	l, err := net.Listen("unix", s.ListenSocket)
+	/*l, err := net.Listen("unix", s.ListenSocket)
 	if err != nil {
 		log.Fatalf("Docker Label Proxy - Initial UNIX Listen Error: %s\n", err.Error())
-	}
-	sl, err := newStoppableUnixListener(l)
+	}*/
+
+	/*sl, err := newStoppableUnixListener(l)
 	if err != nil {
 		log.Fatalf("Docker Label Proxy - Stoppable UNIX Listen Error: %s\n", err.Error())
 	}
 	s.StoppableListener = sl
+	*/
 
-	defer wg.Done()
+	/*defer wg.Done()
 	first := true
 	for {
 		if first {
@@ -48,7 +51,7 @@ func (s *dockerProxy) runProxy(wg *sync.WaitGroup, ready chan<- int) {
 		}
 
 		go s.eachConn(tc)
-	}
+	}*/
 }
 
 func (s *dockerProxy) eachConn(tc net.Conn) {

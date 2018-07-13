@@ -1,11 +1,12 @@
 package main
 
 import (
-	"bufio"
+	//"bufio"
 	"io"
+	"io/ioutil"
 	"log"
-	"net/http"
-	"time"
+	//"net/http"
+	//"time"
 )
 
 // Man-in-the-middle the Docker API call, to insert labels
@@ -20,18 +21,32 @@ import (
 // Cannot return errors here, run in a goroutine (in parallel to response path / io.Copy)
 // Would be nice if we didn't have to buffer the incoming HTTP requests here, but I don't think we can avoid it...
 func mitmDockerApiCall(input io.Reader, output io.Writer) {
-	buffer := bufio.NewReader(input)
-	for i := 0; i <= 10; i++ {
+	request, err := ioutil.ReadAll(input)
+	if err != nil {
+		log.Printf("Error reading all of input: %s", err.Error())
+		return
+	}
+	log.Printf("REQUEST: %s", request)
+	//buffer := bufio.NewReader(input)
+	/*for i := 0; i <= 10; i++ {
 		log.Printf("STARTING REQUEST, SIZE: %d", buffer.Size())
 		time.Sleep(50 * time.Millisecond)
 	}
-	var data []byte
-	bytes, err := buffer.Read(data)
-	log.Printf("REQUEST, bytes: %d, data: %s", bytes, string(data))
+	// Max 100 lines of request headers? we probably need to deal with the request body also...
+	for i := 0; i <= 50; i++ {
+		line, err := buffer.ReadString('\n')
+		log.Printf("LINE ERR: %s", err.Error())
+		/*if err != nil {
+			log.Printf("Error parsing Docker API client request (1): %s", err.Error())
+			return
+		}
+		log.Printf("LINE: %s", line)
+	}
 	req, err := http.ReadRequest(buffer)
 	if err != nil {
 		log.Printf("Error parsing Docker API client request: %s", err.Error())
 		return
 	}
 	log.Printf("%+v\n", req)
+	*/
 }
