@@ -46,22 +46,18 @@ func main() {
 		// c_sig := make(chan os.Signal, 1)
 		// signal.Notify(c_sig, os.Interrupt)
 
-		// Default before it's set correctly
-		listen_socket_full_path := "NONE"
-		use_listen_socket_full_path, err := filepath.Abs(c.String("listensocket"))
+		// Sanitise listen socket path
+		listen_socket_full_path, err := filepath.Abs(c.String("listensocket"))
 		if err != nil {
-			log.Printf("Cannot determine full path of UNIX Listen Socket '%s', may be left orphaned.", c.String("listensocket"))
+			log.Printf("%s - Cannot determine full path of UNIX Listen Socket '%s', may be left orphaned.", app_general_name, c.String("listensocket"))
 			atexit.Exit(1)
 		}
-		listen_socket_full_path = use_listen_socket_full_path
 
 		// On exit, ensure the listen socket is deleted. Most reliable place for it is here
 		atexit.Register(func() {
-			if listen_socket_full_path != "NONE" {
-				if _, err := os.Stat(listen_socket_full_path); err == nil {
-					os.Remove(listen_socket_full_path)
-					log.Printf("Closed UNIX socket '%s' deleted", listen_socket_full_path)
-				}
+			if _, err := os.Stat(listen_socket_full_path); err == nil {
+				os.Remove(listen_socket_full_path)
+				log.Printf("%s - Closed UNIX socket '%s' deleted", app_general_name, listen_socket_full_path)
 			}
 		})
 
@@ -76,7 +72,7 @@ func main() {
 		}*/
 		l, err := net.Listen("unix", listen_socket_full_path)
 		if err != nil {
-			log.Fatalf("dockerd CI Proxy - Initial UNIX Listen Error: %s\n", err.Error())
+			log.Fatalf("%s - Initial UNIX Listen Error: %s\n", app_general_name, err.Error())
 		}
 
 		log.Fatal(http.Serve(l, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
