@@ -1,10 +1,10 @@
 package main
 
 import (
-	"io"
+	//"io"
 	"log"
 	"net"
-	//"net/http"
+	"net/http"
 	"sync"
 )
 
@@ -30,7 +30,7 @@ func (s *dockerProxy) runProxy(wg *sync.WaitGroup, ready chan<- int) {
 	s.StoppableListener = sl
 
 	defer wg.Done()
-	first := true
+	/*first := true
 	for {
 		if first {
 			// Notify parent that we are ready.
@@ -49,9 +49,19 @@ func (s *dockerProxy) runProxy(wg *sync.WaitGroup, ready chan<- int) {
 		}
 
 		go s.eachConn(tc)
+	}*/
+	server := http.Server{
+		Handler: &mitmHttpHandler{
+			TargetSocket: s.TargetSocket,
+		},
 	}
+	go server.Serve(sl)
+	ready <- 1
+	// TODO: do we do server.Serve in a goroutine? so we don't block the main goroutine + we can stop when we want?
+	// TODO: use https://gist.github.com/peterhellberg/38117e546c217960747aacf689af3dc2 to handle interrupts...
 }
 
+/*
 func (s *dockerProxy) eachConn(tc net.Conn) {
 	uc, err := net.Dial("unix", s.TargetSocket)
 	if err != nil {
@@ -68,6 +78,7 @@ func (s *dockerProxy) eachConn(tc net.Conn) {
 	// Response is propagated unmodified from upstream Docker socket to client
 	go io.Copy(uc, tc)
 }
+*/
 
 func startDockerProxy(proxy_wg *sync.WaitGroup, docker_proxy *dockerProxy, proxy_ready chan int, target_socket string, listen_socket string) {
 	log.Printf("Starting %s (Listening on %s)... \n", app_general_name, listen_socket)
@@ -88,6 +99,7 @@ func stopDockerProxy(proxy_wg *sync.WaitGroup, docker_proxy *dockerProxy) {
 
 // Usage:
 //
+// (raw approach)
 // docker_proxy := dockerProxy{ListenSocket: "/var/run/docker_proxy.sock", TargetSocket: "/var/run/docker.sock"}
 // var wg sync.WaitGroup
 // ready := make(chan int)
@@ -97,3 +109,13 @@ func stopDockerProxy(proxy_wg *sync.WaitGroup, docker_proxy *dockerProxy) {
 // Do some stuff...
 // docker_proxy.StoppableListener.Stop()
 // wg.Wait()
+//
+// OR
+//
+// (more verbose abstraction layer)
+// docker_proxy := dockerProxy{}
+// var wg sync.WaitGroup
+// ready := make(chan int)
+// startDockerProxy(&wg, &docker_proxy, ready, "/var/run/docker.sock", "/var/run/docker_proxy.sock")
+// Do some stuff...
+// stopDockerProxy(&wg, &docker_proxy)
