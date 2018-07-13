@@ -16,6 +16,8 @@ import (
 	"gopkg.in/urfave/cli.v1"
 )
 
+var app_general_name = "Docker CI Proxy"
+
 func main() {
 	app := cli.NewApp()
 	app.Name = "dockerd-ci-proxy"

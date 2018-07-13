@@ -19,19 +19,17 @@ type dockerProxy struct {
 }
 
 func (s *dockerProxy) runProxy(wg *sync.WaitGroup, ready chan<- int) {
-	/*l, err := net.Listen("unix", s.ListenSocket)
+	l, err := net.Listen("unix", s.ListenSocket)
 	if err != nil {
-		log.Fatalf("Docker Label Proxy - Initial UNIX Listen Error: %s\n", err.Error())
-	}*/
-
-	/*sl, err := newStoppableUnixListener(l)
+		log.Fatalf("%s - Initial UNIX Listen Error: %s\n", app_general_name, err.Error())
+	}
+	sl, err := newStoppableUnixListener(l)
 	if err != nil {
-		log.Fatalf("Docker Label Proxy - Stoppable UNIX Listen Error: %s\n", err.Error())
+		log.Fatalf("%s - Stoppable UNIX Listen Error: %s\n", app_general_name, err.Error())
 	}
 	s.StoppableListener = sl
-	*/
 
-	/*defer wg.Done()
+	defer wg.Done()
 	first := true
 	for {
 		if first {
@@ -46,18 +44,18 @@ func (s *dockerProxy) runProxy(wg *sync.WaitGroup, ready chan<- int) {
 				// Stop channel triggered, unroll our loops.
 				break
 			} else {
-				log.Fatalf("Accept UNIX Conn Error: %s\n", err.Error())
+				log.Fatalf("%s - Accept UNIX Conn Error: %s\n", app_general_name, err.Error())
 			}
 		}
 
 		go s.eachConn(tc)
-	}*/
+	}
 }
 
 func (s *dockerProxy) eachConn(tc net.Conn) {
 	uc, err := net.Dial("unix", s.TargetSocket)
 	if err != nil {
-		log.Printf("Docker Label Proxy - Failed to connect to UNIX Socket %s. Error: %s\n", s.ListenSocket, err.Error())
+		log.Printf("%s - Failed to connect to UNIX Socket %s. Error: %s\n", app_general_name, s.ListenSocket, err.Error())
 		uc.Close()
 		return
 	}
@@ -72,7 +70,7 @@ func (s *dockerProxy) eachConn(tc net.Conn) {
 }
 
 func startDockerProxy(proxy_wg *sync.WaitGroup, docker_proxy *dockerProxy, proxy_ready chan int, target_socket string, listen_socket string) {
-	log.Printf("Starting Docker Label Proxy (Listening on %s)... \n", listen_socket)
+	log.Printf("Starting %s (Listening on %s)... \n", app_general_name, listen_socket)
 	docker_proxy.ListenSocket = listen_socket
 	docker_proxy.TargetSocket = target_socket
 	proxy_wg.Add(1)
@@ -82,10 +80,10 @@ func startDockerProxy(proxy_wg *sync.WaitGroup, docker_proxy *dockerProxy, proxy
 }
 
 func stopDockerProxy(proxy_wg *sync.WaitGroup, docker_proxy *dockerProxy) {
-	log.Println("Stopping Docker Label Proxy...")
+	log.Printf("Stopping %s...\n", app_general_name)
 	docker_proxy.StoppableListener.Stop()
 	proxy_wg.Wait()
-	log.Println("Docker Label Proxy stopped.")
+	log.Printf("%s stopped.\n", app_general_name)
 }
 
 // Usage:
