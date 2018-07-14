@@ -99,7 +99,7 @@ func TestDockerProxyMock(t *testing.T) {
 		}
 		time.Sleep(100 * time.Millisecond)
 		if ps_req_payload != last_received_request_to_mocked_daemon {
-			t.Errorf("Expected:\n\n%s\n\nGot:\n\n%s\n", ps_req_payload, last_received_request_to_mocked_daemon)
+			t.Errorf("Expected request (len %d):\n\n%s\n\nGot request (len %d):\n\n%s\n", len(ps_req_payload), ps_req_payload, len(last_received_request_to_mocked_daemon), last_received_request_to_mocked_daemon)
 		}
 		resp_buf := make([]byte, 512)
 		_, err = c.Read(resp_buf)
@@ -109,7 +109,7 @@ func TestDockerProxyMock(t *testing.T) {
 		resp_buf_str := string(resp_buf)
 		log.Printf("Client -- Response received: %s\n", resp_buf_str)
 		if resp_buf_str != last_sent_response_from_mocked_daemon {
-			t.Errorf("Expected:\n\n%s\n\nGot:\n\n%s\n", last_sent_response_from_mocked_daemon, resp_buf_str)
+			t.Errorf("Expected response (len %d):\n\n%s\n\nGot response (len %d):\n\n%s\n", len(last_sent_response_from_mocked_daemon), last_sent_response_from_mocked_daemon, len(resp_buf_str), resp_buf_str)
 		}
 	}
 	log.Printf("====================================================================\n")
@@ -127,7 +127,7 @@ func TestDockerProxyMock(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	// TODO: this one needs a slightly differing payload validated, with the extra label/cgroup attached
 	if run_req_payload != last_received_request_to_mocked_daemon {
-		t.Errorf("Expected:\n\n%s\n\nGot:\n\n%s\n", run_req_payload, last_received_request_to_mocked_daemon)
+		t.Errorf("Expected request (len %d):\n\n%s\n\nGot request (len %d):\n\n%s\n", len(run_req_payload), run_req_payload, len(last_received_request_to_mocked_daemon), last_received_request_to_mocked_daemon)
 	}
 	resp_buf := make([]byte, 512)
 	_, err = c.Read(resp_buf)
@@ -137,7 +137,7 @@ func TestDockerProxyMock(t *testing.T) {
 	resp_buf_str := string(resp_buf)
 	log.Printf("Client -- Response received: %s\n", resp_buf_str)
 	if resp_buf_str != last_sent_response_from_mocked_daemon {
-		t.Errorf("Expected:\n\n%s\n\nGot:\n\n%s\n", last_sent_response_from_mocked_daemon, resp_buf_str)
+		t.Errorf("Expected response (len %d):\n\n%s\n\nGot response (len %d):\n\n%s\n", len(last_sent_response_from_mocked_daemon), last_sent_response_from_mocked_daemon, len(resp_buf_str), resp_buf_str)
 	}
 	log.Printf("====================================================================\n")
 	log.Printf("====================================================================\n")
