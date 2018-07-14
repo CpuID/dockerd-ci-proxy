@@ -12,6 +12,7 @@ import (
 
 // TODOLATER: this is pretty ugly, but we will define the received mocked request as a global, and verify it in the coverage
 var last_received_request_to_mocked_daemon string
+var last_sent_response_from_mocked_daemon string
 
 // Credit: https://gist.github.com/hakobe/6f70d69b8c5243117787fd488ae7fbf2
 func mockDockerDaemonConn(c net.Conn) {
@@ -33,6 +34,7 @@ func mockDockerDaemonConn(c net.Conn) {
 		if err != nil {
 			log.Fatal("Cannot write: ", err)
 		}
+		last_sent_response_from_mocked_daemon = response
 	}
 	log.Printf("Mock Docker -- Response sent.\n")
 }
@@ -99,12 +101,16 @@ func TestDockerProxyMock(t *testing.T) {
 		if ps_req_payload != last_received_request_to_mocked_daemon {
 			t.Errorf("Expected:\n\n%s\n\nGot:\n\n%s\n", ps_req_payload, last_received_request_to_mocked_daemon)
 		}
-		buf := make([]byte, 512)
-		_, err = c.Read(buf)
+		resp_buf := make([]byte, 512)
+		_, err = c.Read(resp_buf)
 		if err != nil {
 			return
 		}
-		log.Printf("Client -- Response received: %s\n", buf)
+		resp_buf_str := string(resp_buf)
+		log.Printf("Client -- Response received: %s\n", resp_buf_str)
+		if resp_buf_str != last_sent_response_from_mocked_daemon {
+			t.Errorf("Expected:\n\n%s\n\nGot:\n\n%s\n", last_sent_response_from_mocked_daemon, resp_buf_str)
+		}
 	}
 	log.Printf("====================================================================\n")
 	log.Printf("====================================================================\n")
@@ -123,12 +129,16 @@ func TestDockerProxyMock(t *testing.T) {
 	if run_req_payload != last_received_request_to_mocked_daemon {
 		t.Errorf("Expected:\n\n%s\n\nGot:\n\n%s\n", run_req_payload, last_received_request_to_mocked_daemon)
 	}
-	buf := make([]byte, 512)
-	_, err = c.Read(buf)
+	resp_buf := make([]byte, 512)
+	_, err = c.Read(resp_buf)
 	if err != nil {
 		return
 	}
-	log.Printf("Client -- Response received: %s\n", buf)
+	resp_buf_str := string(resp_buf)
+	log.Printf("Client -- Response received: %s\n", resp_buf_str)
+	if resp_buf_str != last_sent_response_from_mocked_daemon {
+		t.Errorf("Expected:\n\n%s\n\nGot:\n\n%s\n", last_sent_response_from_mocked_daemon, resp_buf_str)
+	}
 	log.Printf("====================================================================\n")
 	log.Printf("====================================================================\n")
 

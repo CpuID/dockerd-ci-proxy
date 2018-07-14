@@ -58,7 +58,7 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// From docs:
 	// For incoming requests, the Host header is promoted to the
 	// Request.Host field and removed from the Header map.
-	ureq.Header.Set("Host", r.Host)
+	ureq.Host = r.Host
 	uresp, err := httpc.Do(ureq)
 	if err != nil {
 		log.Printf("MITM -- Error on upstream request: %s\n", err.Error())
