@@ -6,11 +6,9 @@ import (
 	"os"
 	"sync"
 	"testing"
-	//"time"
 )
 
 // Credit: https://gist.github.com/hakobe/6f70d69b8c5243117787fd488ae7fbf2
-// TODO: this needs to be an actual HTTP server to play nicely?
 func mockDockerDaemonConn(c net.Conn) {
 	log.Printf("Mock Docker -- New Request Received.\n")
 	for {

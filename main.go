@@ -1,16 +1,12 @@
 package main
 
 import (
-	//"context"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"os"
-	//"os/signal"
 	"path/filepath"
-	//"sync"
-	//"time"
 
 	"github.com/CpuID/atexit"
 	"gopkg.in/urfave/cli.v1"

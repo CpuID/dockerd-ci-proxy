@@ -1,7 +1,6 @@
 package main
 
 import (
-	//"io"
 	"log"
 	"net"
 	"net/http"
@@ -60,25 +59,6 @@ func (s *dockerProxy) runProxy(wg *sync.WaitGroup, ready chan<- int) {
 	// TODO: do we do server.Serve in a goroutine? so we don't block the main goroutine + we can stop when we want?
 	// TODO: use https://gist.github.com/peterhellberg/38117e546c217960747aacf689af3dc2 to handle interrupts...
 }
-
-/*
-func (s *dockerProxy) eachConn(tc net.Conn) {
-	uc, err := net.Dial("unix", s.TargetSocket)
-	if err != nil {
-		log.Printf("%s - Failed to connect to UNIX Socket %s. Error: %s\n", app_general_name, s.ListenSocket, err.Error())
-		uc.Close()
-		return
-	}
-
-	// Passthrough requests to Docker daemon, testing use only
-	// go io.Copy(tc, uc)
-	// Intercept/MITM the requests to Docker daemon
-	go mitmDockerApiCall(tc, uc)
-
-	// Response is propagated unmodified from upstream Docker socket to client
-	go io.Copy(uc, tc)
-}
-*/
 
 func startDockerProxy(proxy_wg *sync.WaitGroup, docker_proxy *dockerProxy, proxy_ready chan int, target_socket string, listen_socket string) {
 	log.Printf("Starting %s (Listening on %s)... \n", app_general_name, listen_socket)

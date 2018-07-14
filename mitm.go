@@ -1,15 +1,12 @@
 package main
 
 import (
-	//"bufio"
 	"context"
 	"fmt"
-	//"io"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
-	//"time"
 )
 
 type mitmHttpHandler struct {
@@ -38,7 +35,7 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Upstream response
 	//var ur *http.Response
-	// TODO: conditional on HTTP methods
+	// TODO: conditional on HTTP method types
 	log.Printf("MITM -- Make upstream request...\n")
 	ur, err := httpc.Get("http://unix" + r.URL.String())
 	if err != nil {
