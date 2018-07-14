@@ -14,26 +14,24 @@ At this point, your container scheduler knows about all containers that are star
 
 By putting a UNIX socket proxy between the volume mapping, we can add extra Docker labels to all newly created images or containers, allowing for reaping/GC by existing methods (eg. `docker container prune --filter 'labelname=xyz'`, or alternate approaches for running containers). There is currently no native capability to force adding labels for all operations by a single Docker API client.
 
-The same rule goes for:
+The same rule goes for (specific API calls):
 
-- containers
-- images
-- networks
-- volumes
+- containers `/containers/create`
+- images (builds, not pulls) `/build``
+- networks `/networks/create`
+- volumes `/volumes/create`
+- services `/services/create`
+- secrets `/secrets/create`
+- configs `/configs/create`
+
 
 Another approach to this is for the native Docker client to support default labels in the client config files. Requested upstream [here](https://github.com/moby/moby/issues/33644) - this will only cover using the official Docker CLI client and not alternate clients that talk to the same UNIX socket, which this project would cover.
 
 ## Parent CGroup
 
-You can also apply a custom `cgroup-parent` to all child containers so they are grouped, to avoid OOM collateral damage to your other workloads on your container scheduler managed cluster, and "reserve" system resources via your scheduler. Eg. you may allocate 25% of memory on a system as "not managed by the scheduler", which you would hand to the CGroup to utilise.
+You can also apply a custom `cgroup-parent` to all child containers so they are grouped, to avoid OOM collateral damage to your other workloads on your container scheduler managed cluster, and "reserve" system resources via your scheduler. Eg. you may need 256MB for a Jenkins agent, but you might allocate 2048MB and the child containers will use the surplus when spawned within the same parent cgroup.
 
-# Shortcomings
-
-This won't reserve capacity on the container scheduler (eg. ECS)... which won't be amazing :s
-
-One potential workaround is just use `ECS_RESERVED_MEMORY` on the ECS agent to reserve say 25% of all memory for non-ECS stuff, eg. spawned containers? and adjust the % based on usage patterns?
-
-Maybe also consider using a parent cgroup as a "memory pool" for all these random containers, as a way to avoid collateral damage from OOMs? eg. the 25% reserved gets applied to the "parent cgroup", and all containers spawned get thrown in that.
+This will be applied for `/containers/create` API calls only (`docker run` effectively).
 
 ## Parent CGroup Container Startup Example
 
@@ -53,7 +51,24 @@ Note: `docker stats` will still show the unconstrained memory threshold, not the
 # Usage
 
 ```
+NAME:
+   dockerd-ci-proxy - Docker Daemon UNIX Socket Proxy for CI Child Containers
 
+USAGE:
+   dockerd-ci-proxy [global options] command [command options] [arguments...]
+
+VERSION:
+   0.0.1
+
+COMMANDS:
+     help, h  Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --debug, -d                       Debug Mode
+   --dockersocket value, --ds value  The Docker daemon API UNIX socket to connect to (default: "/var/run/docker.sock")
+   --listensocket value, --ls value  The UNIX listen socket for this process, Docker API clients will point at this path (default: "/var/run/docker-ci-proxy.sock")
+   --help, -h                        show help
+   --version, -v                     print the version
 ```
 
 # License
