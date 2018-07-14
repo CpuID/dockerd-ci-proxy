@@ -79,6 +79,8 @@ func TestDockerProxyMock(t *testing.T) {
 	}
 	// Fire off the same command twice, "good enough"
 	for i := 0; i < 2; i++ {
+		log.Printf("====================================================================\n")
+		log.Printf("====================================================================\n")
 		log.Printf("Client -- Sending request...\n")
 		_, err := c.Write([]byte("GET /v1.37/containers/json HTTP/1.1\r\nHost: docker\r\nUser-Agent: Docker-Client/18.03.1-ce (darwin)\r\n\r\n"))
 		if err != nil {
@@ -92,6 +94,8 @@ func TestDockerProxyMock(t *testing.T) {
 		}
 		log.Printf("Client -- Response received: %s\n", buf)
 	}
+	log.Printf("====================================================================\n")
+	log.Printf("====================================================================\n")
 
 	stopDockerProxy(&wg, &docker_proxy)
 }
