@@ -2,6 +2,7 @@ package main
 
 import (
 	//"bufio"
+	"context"
 	"fmt"
 	//"io"
 	"io/ioutil"
@@ -26,21 +27,45 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Headers: %+v\n", r.Header)
 	log.Printf("Body: %s\n", body)
 	log.Printf("----------\n")
-	fmt.Fprintf(w, "HTTP 200 OK\n")
 
-	log.Printf("mitm request, target socket: %s\n", h.TargetSocket)
-	uc, err := net.Dial("unix", h.TargetSocket)
-	defer uc.Close()
-	if err != nil {
-		log.Printf("%s - Failed to connect to UNIX Socket %s. Error: %s\n", app_general_name, h.TargetSocket, err.Error())
-		// TODO: failure via fmt.Fprintf(w, ...)?
-		return
+	/*
+		log.Printf("mitm request, target socket: %s\n", h.TargetSocket)
+		uc, err := net.Dial("unix", h.TargetSocket)
+		defer uc.Close()
+		if err != nil {
+			log.Printf("%s - Failed to connect to UNIX Socket %s. Error: %s\n", app_general_name, h.TargetSocket, err.Error())
+			// TODO: failure via fmt.Fprintf(w, ...)?
+			return
+		}
+	*/
+
+	// Credit: https://gist.github.com/teknoraver/5ffacb8757330715bcbcc90e6d46ac74#file-unixhttpc-go-L27
+	httpc := http.Client{
+		Transport: &http.Transport{
+			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
+				return net.Dial("unix", h.TargetSocket)
+			},
+		},
 	}
 
-	_, err = uc.Write([]byte(fmt.Sprintf("%s\n", r.URL.String())))
+	// Upstream response
+	//var ur *http.Response
+	// TODO: conditional on HTTP methods
+	log.Printf("Start MITM Upstream Request...\n")
+	ur, err := httpc.Get("http://unix" + r.URL.String())
 	if err != nil {
-		log.Printf("Error on upstream HTTP request: %s\n", err.Error())
+		log.Printf("Error on Upstream Request: %s\n", err.Error())
 	}
+	log.Printf("MITM Upstream Response: %+v\n", ur)
+	// TODO: proxy response through to ResponseWriter? can we io.Copy?
+	//defer ur.Body.Close()
+	//ubody, err := ioutil.ReadAll(ur.Body)
+	//if err != nil {
+	//	log.Printf("Error reading body from upstream: %s\n", err.Error())
+	//}
+	//fmt.Fprintf(w, string(ubody))
+	fmt.Fprintf(w, "hello")
+	log.Printf("NEW REQUEST END.\n")
 }
 
 // Man-in-the-middle the Docker API call, to insert labels

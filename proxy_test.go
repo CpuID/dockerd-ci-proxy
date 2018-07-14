@@ -10,10 +10,11 @@ import (
 )
 
 // Credit: https://gist.github.com/hakobe/6f70d69b8c5243117787fd488ae7fbf2
+// TODO: this needs to be an actual HTTP server to play nicely?
 func echoServerConn(c net.Conn) {
 	log.Printf("echoServer: START\n")
 	for {
-		buf := make([]byte, 8)
+		buf := make([]byte, 512)
 		nr, err := c.Read(buf)
 		if err != nil {
 			return
@@ -23,7 +24,7 @@ func echoServerConn(c net.Conn) {
 		println("Server got:", string(data))
 		_, err = c.Write(data)
 		if err != nil {
-			log.Fatal("Write: ", err)
+			log.Fatal("Cannot write: ", err)
 		}
 	}
 }
@@ -32,7 +33,7 @@ func echoServer(l net.Listener) {
 	for {
 		fd, err := l.Accept()
 		if err != nil {
-			log.Fatal("Accept error: ", err)
+			log.Fatalf("Accept error: %s\n", err)
 		}
 
 		go echoServerConn(fd)
