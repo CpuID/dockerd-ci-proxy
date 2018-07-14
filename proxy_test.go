@@ -6,13 +6,13 @@ import (
 	"os"
 	"sync"
 	"testing"
-	"time"
+	//"time"
 )
 
 // Credit: https://gist.github.com/hakobe/6f70d69b8c5243117787fd488ae7fbf2
 // TODO: this needs to be an actual HTTP server to play nicely?
-func echoServerConn(c net.Conn) {
-	log.Printf("echoServer: START\n")
+func mockDockerDaemonConn(c net.Conn) {
+	log.Printf("Mock Docker -- New Request Received.\n")
 	for {
 		buf := make([]byte, 512)
 		nr, err := c.Read(buf)
@@ -22,21 +22,23 @@ func echoServerConn(c net.Conn) {
 
 		data := buf[0:nr]
 		println("Server got:", string(data))
-		_, err = c.Write(data)
+		response := "HTTP/1.1 200 OK\r\nApi-Version: 1.31\r\nContent-Type: application/json\r\nDocker-Experimental: false\r\nOstype: linux\r\nServer: Docker/17.07.0-ce (linux)\r\nDate: Sat, 14 Jul 2018 03:17:00 GMT\r\nContent-Length: 3\r\n\r\n[]\r\n"
+		_, err = c.Write([]byte(response))
 		if err != nil {
 			log.Fatal("Cannot write: ", err)
 		}
 	}
+	log.Printf("Mock Docker -- Response sent.\n")
 }
 
-func echoServer(l net.Listener) {
+func mockDockerDaemon(l net.Listener) {
 	for {
 		fd, err := l.Accept()
 		if err != nil {
-			log.Fatalf("Accept error: %s\n", err)
+			log.Fatalf("Mock Docker -- Accept error: %s\n", err)
 		}
 
-		go echoServerConn(fd)
+		go mockDockerDaemonConn(fd)
 	}
 }
 
@@ -55,7 +57,7 @@ func TestDockerProxyMock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	go echoServer(mocked_docker_daemon)
+	go mockDockerDaemon(mocked_docker_daemon)
 	defer mocked_docker_daemon.Stop()
 
 	mocked_proxy_socket_path := "/tmp/mock_docker_proxy.sock"
@@ -75,19 +77,20 @@ func TestDockerProxyMock(t *testing.T) {
 	if err != nil {
 		panic(err.Error())
 	}
-	println("proceeding...")
-	iter := 0
-	for {
-		println("sending...")
+	// Fire off the same command twice, "good enough"
+	for i := 0; i < 2; i++ {
+		log.Printf("Client -- Sending request...\n")
 		_, err := c.Write([]byte("GET /v1.37/containers/json HTTP/1.1\r\nHost: docker\r\nUser-Agent: Docker-Client/18.03.1-ce (darwin)\r\n\r\n"))
 		if err != nil {
 			println(err.Error())
 		}
-		time.Sleep(1 * time.Second)
-		iter = iter + 1
-		if iter >= 5 {
-			break
+		//time.Sleep(500 * time.Millisecond)
+		buf := make([]byte, 128)
+		_, err = c.Read(buf)
+		if err != nil {
+			return
 		}
+		log.Printf("Client -- Response received: %s\n", buf)
 	}
 
 	stopDockerProxy(&wg, &docker_proxy)

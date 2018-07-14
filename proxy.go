@@ -87,7 +87,7 @@ func startDockerProxy(proxy_wg *sync.WaitGroup, docker_proxy *dockerProxy, proxy
 	proxy_wg.Add(1)
 	go docker_proxy.runProxy(proxy_wg, proxy_ready)
 	<-proxy_ready
-	log.Println("Started.")
+	log.Printf("%s Started.\n", app_general_name)
 }
 
 func stopDockerProxy(proxy_wg *sync.WaitGroup, docker_proxy *dockerProxy) {
