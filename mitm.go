@@ -46,9 +46,7 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	// Upstream response
-	var ur *http.Response
-	// TODO: conditional on HTTP method types
+	var ur *http.Response // Upstream response
 	log.Printf("MITM -- Make upstream request...\n")
 	switch r.Method {
 	case "GET":
@@ -79,6 +77,5 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Fprintf(w, string(ubody))
-	//fmt.Fprintf(w, "hello")
 	log.Printf("MITM -- Response sent to client.\n")
 }

@@ -7,13 +7,19 @@ import (
 	"os"
 	"sync"
 	"testing"
+	"time"
 )
+
+// TODOLATER: this is pretty ugly, but we will define the received mocked request as a global, and verify it in the coverage
+var last_received_request_to_mocked_daemon string
 
 // Credit: https://gist.github.com/hakobe/6f70d69b8c5243117787fd488ae7fbf2
 func mockDockerDaemonConn(c net.Conn) {
 	log.Printf("Mock Docker -- New Request Received.\n")
 	for {
-		buf := make([]byte, 512)
+		// NOTE: the real upstream won't be doing 2048b blocks...
+		// should we be using httptest.NewServer() instead?
+		buf := make([]byte, 2048)
 		nr, err := c.Read(buf)
 		if err != nil {
 			return
@@ -21,6 +27,7 @@ func mockDockerDaemonConn(c net.Conn) {
 
 		data := buf[0:nr]
 		println("Server got:", string(data))
+		last_received_request_to_mocked_daemon = string(data)
 		response := "HTTP/1.1 200 OK\r\nApi-Version: 1.31\r\nContent-Type: application/json\r\nDocker-Experimental: false\r\nOstype: linux\r\nServer: Docker/17.07.0-ce (linux)\r\nDate: Sat, 14 Jul 2018 03:17:00 GMT\r\nContent-Length: 3\r\n\r\n[]\r\n"
 		_, err = c.Write([]byte(response))
 		if err != nil {
@@ -43,6 +50,7 @@ func mockDockerDaemon(l net.Listener) {
 
 func TestDockerProxyMock(t *testing.T) {
 	// Start up a mocked Docker daemon unix socket, to receive calls on.
+	// TODO: do we use httptest.NewServer() here instead? more elegant + we can use non-global variable state to verify received requests...?
 	mocked_docker_daemon_socket_path := "/tmp/mock_docker.sock"
 	if _, err := os.Stat(mocked_docker_daemon_socket_path); err == nil {
 		os.Remove(mocked_docker_daemon_socket_path)
@@ -59,6 +67,7 @@ func TestDockerProxyMock(t *testing.T) {
 	go mockDockerDaemon(mocked_docker_daemon)
 	defer mocked_docker_daemon.Stop()
 
+	// Define the CI Proxy socket path (mocked for test coverage)
 	mocked_proxy_socket_path := "/tmp/mock_docker_proxy.sock"
 	if _, err := os.Stat(mocked_proxy_socket_path); err == nil {
 		os.Remove(mocked_proxy_socket_path)
@@ -86,8 +95,11 @@ func TestDockerProxyMock(t *testing.T) {
 		if err != nil {
 			println(err.Error())
 		}
-		//time.Sleep(500 * time.Millisecond)
-		buf := make([]byte, 128)
+		time.Sleep(100 * time.Millisecond)
+		if ps_req_payload != last_received_request_to_mocked_daemon {
+			t.Errorf("Expected:\n\n%s\n\nGot:\n\n%s\n", ps_req_payload, last_received_request_to_mocked_daemon)
+		}
+		buf := make([]byte, 512)
 		_, err = c.Read(buf)
 		if err != nil {
 			return
@@ -106,8 +118,12 @@ func TestDockerProxyMock(t *testing.T) {
 	if err != nil {
 		println(err.Error())
 	}
-	//time.Sleep(500 * time.Millisecond)
-	buf := make([]byte, 128)
+	time.Sleep(100 * time.Millisecond)
+	// TODO: this one needs a slightly differing payload validated, with the extra label/cgroup attached
+	if run_req_payload != last_received_request_to_mocked_daemon {
+		t.Errorf("Expected:\n\n%s\n\nGot:\n\n%s\n", run_req_payload, last_received_request_to_mocked_daemon)
+	}
+	buf := make([]byte, 512)
 	_, err = c.Read(buf)
 	if err != nil {
 		return
