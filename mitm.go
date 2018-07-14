@@ -25,16 +25,16 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("MITM -- Body: %s\n", body)
 	log.Printf("----------\n")
 
-	upstream_req_content_type := ""
 	if r.Method == "POST" {
-		if r.Header.Get("Content-Type") != "" {
-			upstream_req_content_type = r.Header.Get("Content-Type")
-		} else {
-			log.Printf("MITM -- Received POST request to URI '%s' without Content-Type header, cannot proxy.\n", r.URL.String())
-			// TODO: error to w + return
-			return
-		}
 		// TODO: parse out body, ensure we apply the correct labels/parent cgroup respectively. JSON?
+	}
+
+	log.Printf("MITM -- Make upstream request...\n")
+
+	// Ensure compression matches original request
+	disable_compression := false
+	if r.Header.Get("Accept-Encoding") == "" {
+		disable_compression = true
 	}
 
 	// Credit: https://gist.github.com/teknoraver/5ffacb8757330715bcbcc90e6d46ac74#file-unixhttpc-go-L27
@@ -43,34 +43,33 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
 				return net.Dial("unix", h.TargetSocket)
 			},
+			DisableCompression: disable_compression,
 		},
 	}
 
-	var ur *http.Response // Upstream response
-	log.Printf("MITM -- Make upstream request...\n")
-	switch r.Method {
-	case "GET":
-		ur, err = httpc.Get("http://unix" + r.URL.String())
-	case "POST":
-		// Most should have Content-Type: application/json, except for "docker import" which looks to use Content-Type: text/plain
-		// Use whatever the received request Content-Type is here.
-		// TODO: use modified body here
-		ur, err = httpc.Post("http://unix"+r.URL.String(), upstream_req_content_type, strings.NewReader(string(body)))
-	default:
-		log.Printf("MITM -- Unsupported HTTP method '%s', cannot passthrough", r.Method)
+	// TODO: use pre-parsed out body here for POST requests
+	ureq, err := http.NewRequest(r.Method, "http://unix"+r.URL.String(), strings.NewReader(string(body)))
+	if err != nil {
+		log.Printf("MITM -- Error generating upstream request: %s\n", err.Error())
 		// TODO: error to w + return
-		return
 	}
+	// Most POST requests should have Content-Type: application/json, except for "docker import" which looks to use Content-Type: text/plain
+	ureq.Header = r.Header
+	// From docs:
+	// For incoming requests, the Host header is promoted to the
+	// Request.Host field and removed from the Header map.
+	ureq.Header.Set("Host", r.Host)
+	uresp, err := httpc.Do(ureq)
 	if err != nil {
 		log.Printf("MITM -- Error on upstream request: %s\n", err.Error())
 		// TODO: error to w + return
 		return
 	}
-	log.Printf("MITM -- Received upstream response: %+v\n", ur)
+	log.Printf("MITM -- Received upstream response: %+v\n", uresp)
 	// TODO: proxy response through to ResponseWriter? can we io.Copy?
 	// Biggest place this will get nasty otherwise is on "docker export" operations, in terms of buffering a full image (memory footprint).
-	defer ur.Body.Close()
-	ubody, err := ioutil.ReadAll(ur.Body)
+	defer uresp.Body.Close()
+	ubody, err := ioutil.ReadAll(uresp.Body)
 	if err != nil {
 		log.Printf("MITM -- Error reading upstream response body: %s\n", err.Error())
 		// TODO: error to w + return
