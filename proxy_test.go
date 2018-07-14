@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -75,12 +76,13 @@ func TestDockerProxyMock(t *testing.T) {
 	if err != nil {
 		panic(err.Error())
 	}
-	// Fire off the same command twice, "good enough"
+	// Fire off 2 x "docker ps" executions, validate standard passthrough behaviour
 	for i := 0; i < 2; i++ {
 		log.Printf("====================================================================\n")
 		log.Printf("====================================================================\n")
-		log.Printf("Client -- Sending request...\n")
-		_, err := c.Write([]byte("GET /v1.37/containers/json HTTP/1.1\r\nHost: docker\r\nUser-Agent: Docker-Client/18.03.1-ce (darwin)\r\n\r\n"))
+		ps_req_payload := "GET /v1.37/containers/json HTTP/1.1\r\nHost: docker\r\nUser-Agent: Docker-Client/18.03.1-ce (darwin)\r\n\r\n"
+		log.Printf("Client -- Sending request: %s", ps_req_payload)
+		_, err := c.Write([]byte(ps_req_payload))
 		if err != nil {
 			println(err.Error())
 		}
@@ -92,6 +94,25 @@ func TestDockerProxyMock(t *testing.T) {
 		}
 		log.Printf("Client -- Response received: %s\n", buf)
 	}
+	log.Printf("====================================================================\n")
+	log.Printf("====================================================================\n")
+	// Also fire off a "docker run" API call.
+	// "docker run -it --rm alpine:3.7 sh"
+	run_req_payload := "POST /v1.37/containers/create HTTP/1.1\r\nHost: docker\r\nUser-Agent: Docker-Client/18.03.1-ce (darwin)\r\nContent-Length: 1426\r\nContent-Type: application/json\r\n\r\n"
+	run_req_payload = fmt.Sprintf("%s%s", run_req_payload, `{"Hostname":"","Domainname":"","User":"","AttachStdin":true,"AttachStdout":true,"AttachStderr":true,"Tty":true,"OpenStdin":true,"StdinOnce":true,"Env":[],"Cmd":["sh"],"Image":"alpine:3.7","Volumes":{},"WorkingDir":"","Entrypoint":null,"OnBuild":null,"Labels":{},"HostConfig":{"Binds":null,"ContainerIDFile":"","LogConfig":{"Type":"","Config":{}},"NetworkMode":"default","PortBindings":{},"RestartPolicy":{"Name":"no","MaximumRetryCount":0},"AutoRemove":true,"VolumeDriver":"","VolumesFrom":null,"CapAdd":null,"CapDrop":null,"Dns":[],"DnsOptions":[],"DnsSearch":[],"ExtraHosts":null,"GroupAdd":null,"IpcMode":"","Cgroup":"","Links":null,"OomScoreAdj":0,"PidMode":"","Privileged":false,"PublishAllPorts":false,"ReadonlyRootfs":false,"SecurityOpt":null,"UTSMode":"","UsernsMode":"","ShmSize":0,"ConsoleSize":[0,0],"Isolation":"","CpuShares":0,"Memory":0,"NanoCpus":0,"CgroupParent":"","BlkioWeight":0,"BlkioWeightDevice":[],"BlkioDeviceReadBps":null,"BlkioDeviceWriteBps":null,"BlkioDeviceReadIOps":null,"BlkioDeviceWriteIOps":null,"CpuPeriod":0,"CpuQuota":0,"CpuRealtimePeriod":0,"CpuRealtimeRuntime":0,"CpusetCpus":"","CpusetMems":"","Devices":[],"DeviceCgroupRules":null,"DiskQuota":0,"KernelMemory":0,"MemoryReservation":0,"MemorySwap":0,"MemorySwappiness":-1,"OomKillDisable":false,"PidsLimit":0,"Ulimits":null,"CpuCount":0,"CpuPercent":0,"IOMaximumIOps":0,"IOMaximumBandwidth":0},"NetworkingConfig":{"EndpointsConfig":{}}}`)
+	run_req_payload = fmt.Sprintf("%s%s", run_req_payload, "\r\n")
+	log.Printf("Client -- Sending request: %s", run_req_payload)
+	_, err = c.Write([]byte(run_req_payload))
+	if err != nil {
+		println(err.Error())
+	}
+	//time.Sleep(500 * time.Millisecond)
+	buf := make([]byte, 128)
+	_, err = c.Read(buf)
+	if err != nil {
+		return
+	}
+	log.Printf("Client -- Response received: %s\n", buf)
 	log.Printf("====================================================================\n")
 	log.Printf("====================================================================\n")
 

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strings"
 )
 
 type mitmHttpHandler struct {
@@ -24,6 +25,18 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("MITM -- Body: %s\n", body)
 	log.Printf("----------\n")
 
+	upstream_req_content_type := ""
+	if r.Method == "POST" {
+		if r.Header.Get("Content-Type") != "" {
+			upstream_req_content_type = r.Header.Get("Content-Type")
+		} else {
+			log.Printf("MITM -- Received POST request to URI '%s' without Content-Type header, cannot proxy.\n", r.URL.String())
+			// TODO: error to w + return
+			return
+		}
+		// TODO: parse out body, ensure we apply the correct labels/parent cgroup respectively. JSON?
+	}
+
 	// Credit: https://gist.github.com/teknoraver/5ffacb8757330715bcbcc90e6d46ac74#file-unixhttpc-go-L27
 	httpc := http.Client{
 		Transport: &http.Transport{
@@ -34,12 +47,26 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Upstream response
-	//var ur *http.Response
+	var ur *http.Response
 	// TODO: conditional on HTTP method types
 	log.Printf("MITM -- Make upstream request...\n")
-	ur, err := httpc.Get("http://unix" + r.URL.String())
+	switch r.Method {
+	case "GET":
+		ur, err = httpc.Get("http://unix" + r.URL.String())
+	case "POST":
+		// Most should have Content-Type: application/json, except for "docker import" which looks to use Content-Type: text/plain
+		// Use whatever the received request Content-Type is here.
+		// TODO: use modified body here
+		ur, err = httpc.Post("http://unix"+r.URL.String(), upstream_req_content_type, strings.NewReader(string(body)))
+	default:
+		log.Printf("MITM -- Unsupported HTTP method '%s', cannot passthrough", r.Method)
+		// TODO: error to w + return
+		return
+	}
 	if err != nil {
 		log.Printf("MITM -- Error on upstream request: %s\n", err.Error())
+		// TODO: error to w + return
+		return
 	}
 	log.Printf("MITM -- Received upstream response: %+v\n", ur)
 	// TODO: proxy response through to ResponseWriter? can we io.Copy?
@@ -48,6 +75,8 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ubody, err := ioutil.ReadAll(ur.Body)
 	if err != nil {
 		log.Printf("MITM -- Error reading upstream response body: %s\n", err.Error())
+		// TODO: error to w + return
+		return
 	}
 	fmt.Fprintf(w, string(ubody))
 	//fmt.Fprintf(w, "hello")
