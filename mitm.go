@@ -66,8 +66,8 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("MITM -- Received upstream response: %+v\n", uresp)
-	// TODO: proxy response through to ResponseWriter? can we io.Copy?
-	// Biggest place this will get nasty otherwise is on "docker export" operations, in terms of buffering a full image (memory footprint).
+	// TODOLATER: biggest place this will get nasty otherwise is on "docker export" operations, in terms of buffering a full image (memory footprint).
+	// If we could only do an io.Copy here instead on the response...
 	defer uresp.Body.Close()
 	ubody, err := ioutil.ReadAll(uresp.Body)
 	if err != nil {
@@ -75,6 +75,12 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// TODO: error to w + return
 		return
 	}
+	for hk, hv := range uresp.Header {
+		for _, hv2 := range hv {
+			w.Header().Set(hk, hv2)
+		}
+	}
+	w.WriteHeader(uresp.StatusCode)
 	fmt.Fprintf(w, string(ubody))
 	log.Printf("MITM -- Response sent to client.\n")
 }
