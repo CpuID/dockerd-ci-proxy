@@ -137,7 +137,7 @@ func TestDockerProxyMock(t *testing.T) {
 	resp_buf_str := string(resp_buf)
 	log.Printf("Client -- Response received: %s\n", resp_buf_str)
 	if resp_buf_str != last_sent_response_from_mocked_daemon {
-		t.Errorf("Expected response (len %d):\n\n%s\n\nGot response (len %d):\n\n%s\n", len(last_sent_response_from_mocked_daemon), last_sent_response_from_mocked_daemon, len(resp_buf_str), resp_buf_str)
+		t.Errorf("Expected response (len %d):\n\n%s\n\nGot response (len %d - buf size?):\n\n%s\n", len(last_sent_response_from_mocked_daemon), last_sent_response_from_mocked_daemon, len(resp_buf_str), resp_buf_str)
 	}
 	log.Printf("====================================================================\n")
 	log.Printf("====================================================================\n")
