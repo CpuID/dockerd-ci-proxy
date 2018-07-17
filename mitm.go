@@ -17,22 +17,27 @@ type mitmHttpHandler struct {
 // Takes JSON in, returns JSON
 func injectLabelToPostBody(input string) string {
 	segments := []string{}
-	for _, v := range strings.Split(strings.TrimSpace(input[1:len(input)-1]), ",") {
+	fmt.Printf("use input: %s\n", strings.TrimSpace(input[1:len(input)-2]))
+	for _, v := range strings.Split(strings.TrimSpace(input[1:len(input)-2]), ",") {
 		if len(v) >= 9 && v[0:9] == `"Labels":` {
 			// Found the Labels segment
 			if v[len(v)-2:] == `{}` {
 				// Labels is currently empty, remove }
 				v = v[0 : len(v)-1]
+				fmt.Printf("labels is empty\n")
 			} else {
 				// Labels is currently non-empty, remove }, add a comma
 				v = fmt.Sprintf("%s,", v[0:len(v)-1])
+				fmt.Printf("labels is non-empty\n")
 			}
 			// Append the custom label + } suffix.
 			v = fmt.Sprintf("%s\"%s\":\"%s\"}", v, docker_label_name, docker_label_value)
-			//fmt.Printf("%s\n", v)
+			fmt.Printf("do the labels append\n")
 		}
+		fmt.Printf("segment: %s\n", v)
 		segments = append(segments, v)
 	}
+	//fmt.Printf("%+v\n", segments)
 	return fmt.Sprintf("{%s}", strings.Join(segments, ","))
 }
 
@@ -53,7 +58,9 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// POST with JSON body
 		// Not going down the road of parsing out the JSON as native types, due to the sheer volume of types + API versions that would need to be handled.
 		// Introspect the JSON as a string and inject in the correct location instead.
+		fmt.Printf("-----------\nBEFORE BODY (len %d):\n'%v'\n\n==--==\n", len(body), body)
 		body = []byte(injectLabelToPostBody(string(body)))
+		fmt.Printf("-----------\nAFTER BODY (len %d):\n'%v'\n\n==--==\n", len(body), body)
 	}
 
 	log.Printf("MITM -- Make upstream request...\n")
