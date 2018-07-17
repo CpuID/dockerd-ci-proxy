@@ -14,6 +14,10 @@ import (
 
 var app_general_name = "Docker CI Proxy"
 
+// TODOLATER: don't use globals here?
+var docker_label_name = ""
+var docker_label_value = ""
+
 func main() {
 	app := cli.NewApp()
 	app.Name = "dockerd-ci-proxy"
@@ -34,6 +38,16 @@ func main() {
 			Name:  "listensocket, ls",
 			Value: "/var/run/docker-ci-proxy.sock",
 			Usage: "The UNIX listen socket for this process, Docker API clients will point at this path",
+		},
+		cli.StringFlag{
+			Name:  "labelname, ln",
+			Value: "Created-Via",
+			Usage: "The Docker label name to apply to resources",
+		},
+		cli.StringFlag{
+			Name:  "labelname, ln",
+			Value: "dockerd-ci-proxy",
+			Usage: "The Docker label value to apply to resources",
 		},
 	}
 

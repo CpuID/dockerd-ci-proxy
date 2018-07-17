@@ -7,11 +7,11 @@ import (
 	"testing"
 )
 
-// Because of the way the headers are reinjected into responses, the ordering will likely differ
+// Because of the way the headers are reinjected into requests/responses, the ordering will likely differ
 // but they should be an identical list of key/value pairs otherwise.
-// Take in the plaintext response, and sort the headers and return it so we can do a direct comparison.
+// Take in the plaintext request/response, and sort the headers and return it so we can do a direct comparison.
 // Simple enough solution right now to the issue... otherwise proxy test coverage is more of a PITA.
-func sortResponseHeaders(resp string) string {
+func sortHeaders(resp string) string {
 	status_line := ""
 	// string type is easier here for strings.Join helper functions etc.
 	headers := []string{}
@@ -49,10 +49,10 @@ func sortResponseHeaders(resp string) string {
 }
 
 // Testing the test functionality, kind of needed to :)
-func TestSortResponseHeaders(t *testing.T) {
+func TestSortHeaders(t *testing.T) {
 	input := "HTTP/1.1 200 OK\r\nHost: asdf\r\nContent-Type: application/json\r\nApi-Version: 1.31\r\n\r\nsome payload\nblah\n"
 	expected_result := "HTTP/1.1 200 OK\r\nApi-Version: 1.31\r\nContent-Type: application/json\r\nHost: asdf\r\n\r\nsome payload\nblah\n"
-	result := sortResponseHeaders(input)
+	result := sortHeaders(input)
 	if result != expected_result {
 		t.Errorf("Expected (len %d):\n\n'%s'\n\nGot (len %d):\n\n'%s'", len(expected_result), expected_result, len(result), result)
 	}

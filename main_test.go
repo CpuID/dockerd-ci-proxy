@@ -56,6 +56,10 @@ func TestMain(m *testing.M) {
 		panic(err.Error())
 	}
 
+	// Set mock Docker label name/value
+	docker_label_name = "Created-Via-Mock-By"
+	docker_label_value = "dockerd-ci-proxy-test"
+
 	// Do the tests
 	exitcode := m.Run()
 
