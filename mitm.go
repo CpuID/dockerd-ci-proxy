@@ -50,8 +50,9 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// TODO: use pre-parsed out body here for POST requests
 	ureq, err := http.NewRequest(r.Method, "http://unix"+r.URL.String(), strings.NewReader(string(body)))
 	if err != nil {
-		log.Printf("MITM -- Error generating upstream request: %s\n", err.Error())
-		// TODO: error to w + return
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(fmt.Sprintf("MITM -- Error generating upstream request: %s\n", err.Error())))
+		return
 	}
 	// Most POST requests should have Content-Type: application/json, except for "docker import" which looks to use Content-Type: text/plain
 	ureq.Header = r.Header
@@ -61,8 +62,8 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ureq.Host = r.Host
 	uresp, err := httpc.Do(ureq)
 	if err != nil {
-		log.Printf("MITM -- Error on upstream request: %s\n", err.Error())
-		// TODO: error to w + return
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(fmt.Sprintf("MITM -- Error on upstream request: %s\n", err.Error())))
 		return
 	}
 	log.Printf("MITM -- Received upstream response: %+v\n", uresp)
@@ -71,8 +72,8 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer uresp.Body.Close()
 	ubody, err := ioutil.ReadAll(uresp.Body)
 	if err != nil {
-		log.Printf("MITM -- Error reading upstream response body: %s\n", err.Error())
-		// TODO: error to w + return
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(fmt.Sprintf("MITM -- Error reading upstream response body: %s\n", err.Error())))
 		return
 	}
 	for hk, hv := range uresp.Header {
@@ -81,6 +82,7 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.WriteHeader(uresp.StatusCode)
+	//fmt.Fprintf(w, strings.TrimSpace(string(ubody)))
 	fmt.Fprintf(w, string(ubody))
 	log.Printf("MITM -- Response sent to client.\n")
 }
