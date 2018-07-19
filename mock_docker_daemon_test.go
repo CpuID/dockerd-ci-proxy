@@ -1,26 +1,49 @@
 package main
 
 import (
+	//"bufio"
+	//"fmt"
 	"log"
 	"net"
+	//"net/http"
 )
 
 // Credit: https://gist.github.com/hakobe/6f70d69b8c5243117787fd488ae7fbf2
 func mockDockerDaemonConn(c net.Conn) {
 	if debug_mode >= 2 {
-		log.Printf("Mock Docker -- New Request Received.\n")
+		log.Printf("Mock Docker -- New Connection.\n")
+	}
+	// TODO: use this instead?
+	/*
+			req, err := http.ReadRequest(bufio.NewReader(c))
+			if err != nil {
+				the_error := fmt.Sprintf("Failed to read request: %s", err.Error())
+				http_error := fmt.Sprintf("HTTP/1.1 500 Internal Server Error\r\nContent-Length: %d\r\n\r\n%s", len(the_error), the_error)
+				_, err := c.Write([]byte(http_error))
+				if err != nil {
+					log.Fatal("Cannot write: ", err)
+				}
+			}
+		log.Printf("Mock Docker -- HTTP Request: %+v\n", req)
+	*/
+	//var data []byte
+	//for {
+	if debug_mode >= 2 {
+		log.Printf("Mock Docker -- Receiving....\n")
 	}
 	// TODO: use Content-Length to determine max size here...
-	// 15360 is enough for the fixtures/layer.tar file + headers
-	buf := make([]byte, 15360)
+	buf := make([]byte, 2048)
 	nr, err := c.Read(buf)
 	if err != nil {
 		return
 	}
-
-	data := buf[0:nr]
 	if debug_mode >= 2 {
-		log.Printf("Server got:%s\n", string(data))
+		log.Printf("Mock Docker -- Received partial: %s\n", string(buf))
+	}
+	data := buf[0:nr]
+	//}
+	if debug_mode >= 2 {
+		log.Printf("Mock Docker -- Server got full request: %s\n", string(data))
 	}
 	// TODOLATER: remove the use of a global here...
 	last_received_request_to_mocked_daemon = string(data)
@@ -36,6 +59,9 @@ func mockDockerDaemonConn(c net.Conn) {
 	err = c.Close()
 	if err != nil {
 		log.Fatal("Cannot close connection: ", err)
+	}
+	if debug_mode >= 2 {
+		log.Printf("Mock Docker -- Connection closed successfully.\n")
 	}
 }
 
