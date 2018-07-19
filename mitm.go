@@ -43,10 +43,10 @@ func injectLabelToPostBody(input string) string {
 
 func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if debug_mode >= 1 {
-		log.Printf("MITM -- New request received:\n")
-		log.Printf("MITM -- %s %s\n", r.Method, r.URL.String())
-		log.Printf("MITM -- Headers: %+v\n", r.Header)
-		log.Printf("----------\n")
+		log.Printf("%s -=- MITM -- New request received:\n", app_code_name)
+		log.Printf("%s -=- MITM -- %s %s\n", app_code_name, r.Method, r.URL.String())
+		log.Printf("%s -=- MITM -- Headers: %+v\n", app_code_name, r.Header)
+		log.Printf("%s -=- ----------\n", app_code_name)
 	}
 
 	// Handle parent-cgroup + label injection
@@ -58,17 +58,17 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		body, err = ioutil.ReadAll(r.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(fmt.Sprintf("MITM -- Cannot read API request body: %s", err.Error())))
+			w.Write([]byte(fmt.Sprintf("%s -=- MITM -- Cannot read API request body: %s", app_code_name, err.Error())))
 			return
 		}
 		if debug_mode >= 1 {
-			log.Printf("MITM -- Body: %s\n", body)
-			log.Printf("----------\n")
+			log.Printf("%s -=- MITM -- Body: %s\n", app_code_name, body)
+			log.Printf("%s -=- ----------\n", app_code_name)
 		}
 		if string(body[0:1]) != "{" {
 			// Non-JSON request body, this should never happen based on the API docs (for the method list above)?
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("MITM -- Non-JSON body detected for API call? This should not occur"))
+			w.Write([]byte(fmt.Sprintf("%s -=- MITM -- Non-JSON body detected for API call? This should not occur", app_code_name)))
 			return
 		}
 		// POST with JSON body
@@ -78,7 +78,7 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if debug_mode >= 2 {
-		log.Printf("MITM -- Make upstream request...\n")
+		log.Printf("%s -=- MITM -- Make upstream request...\n", app_code_name)
 	}
 
 	// Ensure compression matches original request
@@ -101,7 +101,7 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ureq, err := http.NewRequest(r.Method, "http://unix"+r.URL.String(), strings.NewReader(string(body)))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("MITM -- Error generating upstream request: %s\n", err.Error())))
+		w.Write([]byte(fmt.Sprintf("%s -=- MITM -- Error generating upstream request: %s\n", app_code_name, err.Error())))
 		return
 	}
 	// Most POST requests should have Content-Type: application/json, except for "docker import" which looks to use Content-Type: text/plain
@@ -113,11 +113,11 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	uresp, err := httpc.Do(ureq)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("MITM -- Error on upstream request: %s\n", err.Error())))
+		w.Write([]byte(fmt.Sprintf("%s -=- MITM -- Error on upstream request: %s\n", app_code_name, err.Error())))
 		return
 	}
 	if debug_mode >= 2 {
-		log.Printf("MITM -- Received upstream response: %+v\n", uresp)
+		log.Printf("%s -=- MITM -- Received upstream response: %+v\n", app_code_name, uresp)
 	}
 	// TODOLATER: biggest place this will get nasty otherwise is on "docker export" operations, in terms of buffering a full image (memory footprint).
 	// If we could only do an io.Copy here instead on the response...
@@ -125,7 +125,7 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ubody, err := ioutil.ReadAll(uresp.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("MITM -- Error reading upstream response body: %s\n", err.Error())))
+		w.Write([]byte(fmt.Sprintf("%s -=- MITM -- Error reading upstream response body: %s\n", app_code_name, err.Error())))
 		return
 	}
 	for hk, hv := range uresp.Header {
@@ -138,6 +138,7 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	//fmt.Fprintf(w, strings.TrimSpace(string(ubody)))
 	fmt.Fprintf(w, string(ubody))
 	if debug_mode >= 1 {
-		log.Printf("MITM -- Response sent to client.\n")
+		log.Printf("%s -=- MITM -- Response sent to client.\n", app_code_name)
+		log.Printf("%s -=- ==========\n", app_code_name)
 	}
 }
