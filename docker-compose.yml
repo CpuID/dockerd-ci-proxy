@@ -5,7 +5,7 @@ services:
     build: .
     cgroup_parent: test-cgroup
     environment:
-      DCP_DEBUG_MODE: "true"
+      DCP_DEBUG: "true"
       DCP_CGROUP_PARENT: "true"
     volumes:
       # TODO: get this working

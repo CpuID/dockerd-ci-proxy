@@ -17,6 +17,7 @@ var docker_label_value = ""
 func handleFlags(c *cli.Context) error {
 	if c.Bool("debug") == true {
 		// "some" is enough here, "all" is mostly used in test coverage
+		log.Printf("%s -=- Debug Mode enabled.\n", app_code_name)
 		debug_mode = 1
 	}
 
@@ -35,7 +36,7 @@ func handleFlags(c *cli.Context) error {
 		}
 		// Flag enabled and non-empty on this container, set it.
 		docker_cgroup_parent = d_cgp_result
-		log.Printf("CgroupParent = '%s', enabled.", docker_cgroup_parent)
+		log.Printf("%s -=- CgroupParent = '%s', enabled.", app_code_name, docker_cgroup_parent)
 	}
 
 	if c.String("labelname") == "" {
