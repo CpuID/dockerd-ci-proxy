@@ -9,8 +9,6 @@ import (
 
 // Credit: http://blog.csdn.net/ylqmf/article/details/38856179
 
-// TODO: adjust verbosity further down once tested.
-
 type dockerProxy struct {
 	ListenSocket      string
 	TargetSocket      string
@@ -56,7 +54,6 @@ func (s *dockerProxy) runProxy(wg *sync.WaitGroup, ready chan<- int) {
 	}
 	go server.Serve(sl)
 	ready <- 1
-	// TODO: do we do server.Serve in a goroutine? so we don't block the main goroutine + we can stop when we want?
 	// TODO: use https://gist.github.com/peterhellberg/38117e546c217960747aacf689af3dc2 to handle interrupts...
 }
 

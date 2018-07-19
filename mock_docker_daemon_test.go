@@ -13,7 +13,7 @@ func mockDockerDaemonConn(c net.Conn) {
 	if debug_mode >= 2 {
 		log.Printf("Mock Docker -- New Connection.\n")
 	}
-	// TODO: use this instead?
+	// TODOLATER: use this instead?
 	/*
 			req, err := http.ReadRequest(bufio.NewReader(c))
 			if err != nil {
@@ -31,7 +31,7 @@ func mockDockerDaemonConn(c net.Conn) {
 	if debug_mode >= 2 {
 		log.Printf("Mock Docker -- Receiving....\n")
 	}
-	// TODO: use Content-Length to determine max size here...
+	// TODOLATER: use Content-Length to determine max size here...
 	buf := make([]byte, 2048)
 	nr, err := c.Read(buf)
 	if err != nil {

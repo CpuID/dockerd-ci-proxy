@@ -21,11 +21,11 @@ func handleFlags(c *cli.Context) error {
 	}
 
 	if c.String("dockersocket") == "" {
-		return fmt.Errorf("--dockersocket (-ds, or env DCP_DOCKER_SOCKET) is empty")
+		return fmt.Errorf("--dockersocket (--ds, or env DCP_DOCKER_SOCKET) is empty")
 	}
-	// TODO: do we verify this socket exists here? DRY / cleanup in proxy.go?
+	// TODOLATER: do we verify this socket exists here?
 	if c.String("listensocket") == "" {
-		return fmt.Errorf("--listensocket (-ds, or env DCP_LISTEN_SOCKET) is empty")
+		return fmt.Errorf("--listensocket (--ls, or env DCP_LISTEN_SOCKET) is empty")
 	}
 
 	if c.Bool("cgroupparent") == true {
@@ -39,11 +39,11 @@ func handleFlags(c *cli.Context) error {
 	}
 
 	if c.String("labelname") == "" {
-		return fmt.Errorf("--labelname (-ln, or env DCP_LABEL_NAME) is empty")
+		return fmt.Errorf("--labelname (--ln, or env DCP_LABEL_NAME) is empty")
 	}
 	docker_label_name = c.String("labelname")
 	if c.String("labelvalue") == "" {
-		return fmt.Errorf("--labelvalue (-lv, or env DCP_LABEL_VALUE) is empty")
+		return fmt.Errorf("--labelvalue (--lv, or env DCP_LABEL_VALUE) is empty")
 	}
 	docker_label_value = c.String("labelvalue")
 

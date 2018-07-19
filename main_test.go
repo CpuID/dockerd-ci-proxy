@@ -25,7 +25,7 @@ func init() {
 
 func TestMain(m *testing.M) {
 	// Start up a mocked Docker daemon unix socket, to receive calls on.
-	// TODO: do we use httptest.NewServer() here instead? more elegant + we can use non-global variable state to verify received requests...?
+	// TODOLATER: do we use httptest.NewServer() here instead? more elegant + we can use non-global variable state to verify received requests...?
 	mocked_docker_daemon_socket_path := "/tmp/mock_docker.sock"
 	if _, err := os.Stat(mocked_docker_daemon_socket_path); err == nil {
 		os.Remove(mocked_docker_daemon_socket_path)

@@ -29,7 +29,7 @@ func TestProxyDockerPs(t *testing.T) {
 		if ps_req_payload != last_received_request_to_mocked_daemon {
 			t.Errorf("Expected request (len %d):\n\n%s\n\nGot request (len %d):\n\n%s\n", len(ps_req_payload), ps_req_payload, len(last_received_request_to_mocked_daemon), last_received_request_to_mocked_daemon)
 		}
-		// TODO: Use Content-Length header to determine EOF
+		// TODOLATER: Use Content-Length header to determine EOF
 		resp_buf := make([]byte, 512)
 		_, err = dc.Read(resp_buf)
 		if err != nil {
@@ -71,7 +71,7 @@ func TestProxyDockerRun(t *testing.T) {
 	if expected_run_req_payload != last_received_request_to_mocked_daemon {
 		t.Errorf("Expected request (len %d):\n\n%s\n\nGot request (len %d):\n\n%s\n", len(expected_run_req_payload), expected_run_req_payload, len(last_received_request_to_mocked_daemon), last_received_request_to_mocked_daemon)
 	}
-	// TODO: Use Content-Length header to determine EOF
+	// TODOLATER: Use Content-Length header to determine EOF
 	resp_buf := make([]byte, 512)
 	_, err = dc.Read(resp_buf)
 	if err != nil {
@@ -133,7 +133,7 @@ func TestProxyDockerImport(t *testing.T) {
 	if string(expected_import_req_payload) != last_received_request_to_mocked_daemon {
 		t.Errorf("Expected request (len %d):\n\n%s\n\nGot request (len %d):\n\n%s\n", len(expected_import_req_payload), expected_import_req_payload, len(last_received_request_to_mocked_daemon), last_received_request_to_mocked_daemon)
 	}
-	// TODO: Use Content-Length header to determine EOF
+	// TODOLATER: Use Content-Length header to determine EOF
 	resp_buf := make([]byte, 512)
 	_, err = dc.Read(resp_buf)
 	if err != nil {

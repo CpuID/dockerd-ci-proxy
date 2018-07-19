@@ -101,7 +101,6 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	// TODO: use io.Copy to propagate request body if unmodified here? So that "docker import" operations are less buffer overhead
 	var ureq_body io.Reader
 	if len(body) > 0 {
 		// Body was parsed out above, feed it in modified.

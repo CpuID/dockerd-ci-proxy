@@ -1,0 +1,10 @@
+version: '2'
+
+services:
+  dcp:
+    build: .
+    cgroup_parent: test-cgroup
+    environment:
+      DCP_CGROUP_PARENT: "true"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
