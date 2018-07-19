@@ -91,7 +91,8 @@ func TestProxyDockerRun(t *testing.T) {
 	mocked_docker_daemon_mutex.Unlock()
 }
 
-// TODO: test an API call with query params, ensure URL/Path are handled as designed in MITM code
+// TODOLATER: test an API call with query params, ensure URL/Path are handled as designed in MITM code
+// (verified manually in import test below using debug output, currently working)
 
 func TestProxyDockerImport(t *testing.T) {
 	mocked_docker_daemon_mutex.Lock()
