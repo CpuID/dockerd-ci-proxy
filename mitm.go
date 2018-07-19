@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"regexp"
 	"strings"
 )
 
@@ -18,34 +19,25 @@ type mitmHttpHandler struct {
 func injectLabelToPostBody(input string) string {
 	segments := []string{}
 	// So we can put the trailing whitespace back if it existed on input
-	trailing_whitespace := ""
-	switch input[len(input)-1:] {
-	case "\r":
-		trailing_whitespace = "\r"
-	case "\n":
-		trailing_whitespace = "\n"
-	}
-	fmt.Printf("use input: %s\n", strings.TrimSpace(input[1:len(input)-2]))
-	for _, v := range strings.Split(strings.TrimSpace(input[1:len(input)-2]), ",") {
+	re := regexp.MustCompile("(\\r|\\n)+$")
+	trailing_whitespace := re.FindString(input)
+	// Remove the trailing whitespace we found then proceed
+	input = input[:len(input)-len(trailing_whitespace)]
+	for _, v := range strings.Split(input[1:len(input)-1], ",") {
 		if len(v) >= 9 && v[0:9] == `"Labels":` {
 			// Found the Labels segment
 			if v[len(v)-2:] == `{}` {
 				// Labels is currently empty, remove }
 				v = v[0 : len(v)-1]
-				fmt.Printf("labels is empty\n")
 			} else {
 				// Labels is currently non-empty, remove }, add a comma
 				v = fmt.Sprintf("%s,", v[0:len(v)-1])
-				fmt.Printf("labels is non-empty\n")
 			}
 			// Append the custom label + } suffix.
 			v = fmt.Sprintf("%s\"%s\":\"%s\"}", v, docker_label_name, docker_label_value)
-			fmt.Printf("do the labels append\n")
 		}
-		fmt.Printf("segment: %s\n", v)
 		segments = append(segments, v)
 	}
-	//fmt.Printf("%+v\n", segments)
 	return fmt.Sprintf("{%s}%s", strings.Join(segments, ","), trailing_whitespace)
 }
 
