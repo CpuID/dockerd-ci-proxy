@@ -5,6 +5,9 @@ services:
     build: .
     cgroup_parent: test-cgroup
     environment:
+      DCP_DEBUG_MODE: "true"
       DCP_CGROUP_PARENT: "true"
     volumes:
+      # TODO: get this working
+      #- "./docker-ci-proxy.sock:/var/run/docker-ci-proxy.sock"
       - "/var/run/docker.sock:/var/run/docker.sock"
