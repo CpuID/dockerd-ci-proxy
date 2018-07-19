@@ -17,7 +17,7 @@ type mitmHttpHandler struct {
 }
 
 // Takes JSON in, returns JSON
-func injectLabelToPostBody(input string) string {
+func injectLabelAndCgroupParentToPostBody(input string, cgroup_parent string) string {
 	segments := []string{}
 	// So we can put the trailing whitespace back if it existed on input
 	re := regexp.MustCompile("(\\r|\\n)+$")
@@ -36,6 +36,10 @@ func injectLabelToPostBody(input string) string {
 			}
 			// Append the custom label + } suffix.
 			v = fmt.Sprintf("%s\"%s\":\"%s\"}", v, docker_label_name, docker_label_value)
+		} else if len(v) >= 15 && v[0:15] == `"CgroupParent":` && len(cgroup_parent) > 0 {
+			// Found the CgroupParent segment
+			// TODOLATER: do we want to error out if one is already set?
+			v = fmt.Sprintf("\"CgroupParent\":\"%s\"", cgroup_parent)
 		}
 		segments = append(segments, v)
 	}
@@ -78,7 +82,7 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// POST with JSON body
 		// Not going down the road of parsing out the JSON as native types, due to the sheer volume of types + API versions that would need to be handled.
 		// Introspect the JSON as a string and inject in the correct location instead.
-		body = []byte(injectLabelToPostBody(string(body)))
+		body = []byte(injectLabelAndCgroupParentToPostBody(string(body), docker_cgroup_parent))
 	}
 
 	if debug_mode >= 2 {
