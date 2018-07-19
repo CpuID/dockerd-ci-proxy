@@ -1,4 +1,8 @@
+# dockerd-ci-proxy
+
 *Docker Daemon UNIX Socket Proxy for CI Child Containers*
+
+[![Build Status](https://travis-ci.org/CpuID/dockerd-ci-proxy.svg?branch=master)](https://travis-ci.org/CpuID/dockerd-ci-proxy)
 
 # Summary
 
