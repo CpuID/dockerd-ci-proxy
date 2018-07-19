@@ -27,6 +27,8 @@ The same rule goes for (specific API calls):
 
 Another approach to this is for the native Docker client to support default labels in the client config files. Requested upstream [here](https://github.com/moby/moby/issues/33644) - this will only cover using the official Docker CLI client and not alternate clients that talk to the same UNIX socket, which this project would cover.
 
+Note: `docker import` operations will not apply a label currently. This feature could be added if worthwhile for completeness (the API seems to have what's required).
+
 ## Parent CGroup
 
 You can also apply a custom `cgroup-parent` to all child containers so they are grouped, to avoid OOM collateral damage to your other workloads on your container scheduler managed cluster, and "reserve" system resources via your scheduler. Eg. you may need 256MB for a Jenkins agent, but you might allocate 2048MB and the child containers will use the surplus when spawned within the same parent cgroup.

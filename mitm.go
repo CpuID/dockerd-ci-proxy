@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -53,8 +54,11 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Selected URI suffixes only for now.
 	var body []byte
 	var err error
-	uri_re := regexp.MustCompile(`\/build|\/(containers|images|volumes|networks|plugins|services|secrets|configs)\/create$`)
-	if r.Method == "POST" && uri_re.MatchString(r.URL.String()) == true {
+	uri_re := regexp.MustCompile(`\/build|\/(containers|volumes|networks|plugins|services|secrets|configs)\/create$`)
+	if r.Method == "POST" && uri_re.MatchString(r.URL.Path) == true {
+		if debug_mode >= 1 {
+			log.Printf("%s -=- MITM -- Method/URI match, parsing out request body.\n", app_code_name)
+		}
 		body, err = ioutil.ReadAll(r.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -98,7 +102,15 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: use io.Copy to propagate request body if unmodified here? So that "docker import" operations are less buffer overhead
-	ureq, err := http.NewRequest(r.Method, "http://unix"+r.URL.String(), strings.NewReader(string(body)))
+	var ureq_body io.Reader
+	if len(body) > 0 {
+		// Body was parsed out above, feed it in modified.
+		ureq_body = strings.NewReader(string(body))
+	} else {
+		// Feed in the reader from upstream request instead (passthrough)
+		ureq_body = r.Body
+	}
+	ureq, err := http.NewRequest(r.Method, "http://unix"+r.URL.String(), ureq_body)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(fmt.Sprintf("%s -=- MITM -- Error generating upstream request: %s\n", app_code_name, err.Error())))
@@ -119,24 +131,18 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if debug_mode >= 2 {
 		log.Printf("%s -=- MITM -- Received upstream response: %+v\n", app_code_name, uresp)
 	}
-	// TODOLATER: biggest place this will get nasty otherwise is on "docker export" operations, in terms of buffering a full image (memory footprint).
-	// If we could only do an io.Copy here instead on the response...
 	defer uresp.Body.Close()
-	ubody, err := ioutil.ReadAll(uresp.Body)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("%s -=- MITM -- Error reading upstream response body: %s\n", app_code_name, err.Error())))
-		return
-	}
 	for hk, hv := range uresp.Header {
 		for _, hv2 := range hv {
 			w.Header().Set(hk, hv2)
+			// TODOLATER: modify test coverage to not break when adding this.
+			//w.Header().Set("X-Served-By", "dockerd-ci-proxy")
 		}
 	}
 	w.WriteHeader(uresp.StatusCode)
-	// TODO: can we use io.Copy here instead? much less potential buffer overhead (especially on "docker export" operations)
-	//fmt.Fprintf(w, strings.TrimSpace(string(ubody)))
-	fmt.Fprintf(w, string(ubody))
+	// Passthrough responses, so that "docker export" operations should be nice and smooth (large payloads)
+	// No modifications are made here anyway.
+	io.Copy(w, uresp.Body)
 	if debug_mode >= 1 {
 		log.Printf("%s -=- MITM -- Response sent to client.\n", app_code_name)
 		log.Printf("%s -=- ==========\n", app_code_name)

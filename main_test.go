@@ -20,7 +20,7 @@ var dc net.Conn
 
 func init() {
 	// Enable "some" debug by default, change this to 2 if you need more and run "go test"
-	debug_mode = 1
+	debug_mode = 2
 }
 
 func TestMain(m *testing.M) {

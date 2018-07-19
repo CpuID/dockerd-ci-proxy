@@ -10,9 +10,9 @@ func mockDockerDaemonConn(c net.Conn) {
 	if debug_mode >= 2 {
 		log.Printf("Mock Docker -- New Request Received.\n")
 	}
-	//for {
 	// TODO: use Content-Length to determine max size here...
-	buf := make([]byte, 2048)
+	// 15360 is enough for the fixtures/layer.tar file + headers
+	buf := make([]byte, 15360)
 	nr, err := c.Read(buf)
 	if err != nil {
 		return
@@ -30,7 +30,6 @@ func mockDockerDaemonConn(c net.Conn) {
 		log.Fatal("Cannot write: ", err)
 	}
 	last_sent_response_from_mocked_daemon = response
-	//}
 	if debug_mode >= 2 {
 		log.Printf("Mock Docker -- Response sent.\n")
 	}

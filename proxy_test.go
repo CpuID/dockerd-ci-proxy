@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"testing"
 	"time"
@@ -22,7 +23,7 @@ func TestProxyDockerPs(t *testing.T) {
 		}
 		_, err := dc.Write([]byte(ps_req_payload))
 		if err != nil {
-			println(err.Error())
+			t.Fatal(err.Error())
 		}
 		time.Sleep(100 * time.Millisecond)
 		if ps_req_payload != last_received_request_to_mocked_daemon {
@@ -59,7 +60,7 @@ func TestProxyDockerRun(t *testing.T) {
 	}
 	_, err := dc.Write([]byte(run_req_payload))
 	if err != nil {
-		println(err.Error())
+		t.Fatal(err.Error())
 	}
 	time.Sleep(100 * time.Millisecond)
 	// The modified HTTP request/payload received by the mock Docker daemon
@@ -69,6 +70,58 @@ func TestProxyDockerRun(t *testing.T) {
 	expected_run_req_payload = fmt.Sprintf("%s%s", expected_run_req_payload, "\r")
 	if expected_run_req_payload != last_received_request_to_mocked_daemon {
 		t.Errorf("Expected request (len %d):\n\n%s\n\nGot request (len %d):\n\n%s\n", len(expected_run_req_payload), expected_run_req_payload, len(last_received_request_to_mocked_daemon), last_received_request_to_mocked_daemon)
+	}
+	// TODO: Use Content-Length header to determine EOF
+	resp_buf := make([]byte, 512)
+	_, err = dc.Read(resp_buf)
+	if err != nil {
+		return
+	}
+	resp_buf_str := string(bytes.TrimRight(resp_buf, "\x00"))
+	if debug_mode >= 2 {
+		log.Printf("Client -- Response received: %s\n", resp_buf_str)
+	}
+	if resp_buf_str != sortHeaders(last_sent_response_from_mocked_daemon) {
+		t.Errorf("Expected response (len %d):\n\n%s\n\nGot response (len %d - buf size?):\n\n%s\n", len(sortHeaders(last_sent_response_from_mocked_daemon)), sortHeaders(last_sent_response_from_mocked_daemon), len(resp_buf_str), resp_buf_str)
+	}
+	if debug_mode >= 2 {
+		log.Printf("====================================================================\n")
+		log.Printf("====================================================================\n")
+	}
+	mocked_docker_daemon_mutex.Unlock()
+}
+
+// TODO: test an API call with query params, ensure URL/Path are handled as designed in MITM code
+
+func TestProxyDockerImport(t *testing.T) {
+	mocked_docker_daemon_mutex.Lock()
+	// Also fire off a "docker import" API call.
+	// "docker import fixtures/layer.tar"
+	import_req_payload := []byte("POST /v1.31/images/create?fromSrc=-&message=&repo=&tag= HTTP/1.1\r\nHost: docker\r\nUser-Agent: Docker-Client/17.07.0-ce (linux)\r\nTransfer-Encoding: chunked\r\nContent-Type: text/plain\r\n\r\n2800\r")
+	fixtures_layer_tar, err := ioutil.ReadFile("./fixtures/layer.tar")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	trimmed_fixtures_layer_tar := bytes.Trim(fixtures_layer_tar, "\x00")
+	import_req_payload = append(import_req_payload, trimmed_fixtures_layer_tar...)
+	import_req_payload = append(import_req_payload, []byte("\r\n0\r\n\r\n")...)
+	if debug_mode >= 2 {
+		log.Printf("====================================================================\n")
+		log.Printf("====================================================================\n")
+		log.Printf("Client -- (Trimmed) layer.tar size in bytes: %d\n", len(trimmed_fixtures_layer_tar))
+		log.Printf("Client -- Sending request: %s", import_req_payload)
+	}
+	_, err = dc.Write(import_req_payload)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	time.Sleep(100 * time.Millisecond)
+	// No payload modification on "docker import", as labels cannot be specified (not ideal in reality, but that's the way it is)
+	// TODOLATER: If we *really* wanted to be tricky here, the "docker import" CLI supposedly supports -c which runs a Dockerfile instruction
+	// against the imported image. This could be "LABEL name=value" and fulfil our goal.
+	expected_import_req_payload := import_req_payload
+	if string(expected_import_req_payload) != last_received_request_to_mocked_daemon {
+		t.Errorf("Expected request (len %d):\n\n%s\n\nGot request (len %d):\n\n%s\n", len(expected_import_req_payload), expected_import_req_payload, len(last_received_request_to_mocked_daemon), last_received_request_to_mocked_daemon)
 	}
 	// TODO: Use Content-Length header to determine EOF
 	resp_buf := make([]byte, 512)
