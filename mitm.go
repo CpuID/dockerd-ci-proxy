@@ -42,28 +42,44 @@ func injectLabelToPostBody(input string) string {
 }
 
 func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Printf("MITM -- New request received:\n")
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("MITM -- Error reading HTTP request body: %s\n", err.Error())
+	if debug_mode >= 1 {
+		log.Printf("MITM -- New request received:\n")
+		log.Printf("MITM -- %s %s\n", r.Method, r.URL.String())
+		log.Printf("MITM -- Headers: %+v\n", r.Header)
+		log.Printf("----------\n")
 	}
-	log.Printf("%s %s\n", r.Method, r.URL.String())
-	log.Printf("MITM -- Headers: %+v\n", r.Header)
-	log.Printf("MITM -- Body: %s\n", body)
-	log.Printf("----------\n")
 
 	// Handle parent-cgroup + label injection
-	// TODO: change this to look at the URI suffix, possibly "/create$"
-	if r.Method == "POST" && string(body[0:1]) == "{" {
+	// Selected URI suffixes only for now.
+	var body []byte
+	var err error
+	uri_re := regexp.MustCompile(`\/build|\/(containers|images|volumes|networks|plugins|services|secrets|configs)\/create$`)
+	if r.Method == "POST" && uri_re.MatchString(r.URL.String()) == true {
+		body, err = ioutil.ReadAll(r.Body)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(fmt.Sprintf("MITM -- Cannot read API request body: %s", err.Error())))
+			return
+		}
+		if debug_mode >= 1 {
+			log.Printf("MITM -- Body: %s\n", body)
+			log.Printf("----------\n")
+		}
+		if string(body[0:1]) != "{" {
+			// Non-JSON request body, this should never happen based on the API docs (for the method list above)?
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("MITM -- Non-JSON body detected for API call? This should not occur"))
+			return
+		}
 		// POST with JSON body
 		// Not going down the road of parsing out the JSON as native types, due to the sheer volume of types + API versions that would need to be handled.
 		// Introspect the JSON as a string and inject in the correct location instead.
-		fmt.Printf("-----------\nBEFORE BODY (len %d):\n'%v'\n\n==--==\n", len(body), body)
 		body = []byte(injectLabelToPostBody(string(body)))
-		fmt.Printf("-----------\nAFTER BODY (len %d):\n'%v'\n\n==--==\n", len(body), body)
 	}
 
-	log.Printf("MITM -- Make upstream request...\n")
+	if debug_mode >= 2 {
+		log.Printf("MITM -- Make upstream request...\n")
+	}
 
 	// Ensure compression matches original request
 	disable_compression := false
@@ -81,7 +97,7 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	// TODO: use pre-parsed out body here for POST requests
+	// TODO: use io.Copy to propagate request body if unmodified here? So that "docker import" operations are less buffer overhead
 	ureq, err := http.NewRequest(r.Method, "http://unix"+r.URL.String(), strings.NewReader(string(body)))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -100,7 +116,9 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(fmt.Sprintf("MITM -- Error on upstream request: %s\n", err.Error())))
 		return
 	}
-	log.Printf("MITM -- Received upstream response: %+v\n", uresp)
+	if debug_mode >= 2 {
+		log.Printf("MITM -- Received upstream response: %+v\n", uresp)
+	}
 	// TODOLATER: biggest place this will get nasty otherwise is on "docker export" operations, in terms of buffering a full image (memory footprint).
 	// If we could only do an io.Copy here instead on the response...
 	defer uresp.Body.Close()
@@ -116,7 +134,10 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.WriteHeader(uresp.StatusCode)
+	// TODO: can we use io.Copy here instead? much less potential buffer overhead (especially on "docker export" operations)
 	//fmt.Fprintf(w, strings.TrimSpace(string(ubody)))
 	fmt.Fprintf(w, string(ubody))
-	log.Printf("MITM -- Response sent to client.\n")
+	if debug_mode >= 1 {
+		log.Printf("MITM -- Response sent to client.\n")
+	}
 }

@@ -18,6 +18,11 @@ var mocked_docker_daemon_mutex sync.Mutex
 // docker client
 var dc net.Conn
 
+func init() {
+	// Enable "some" debug by default, change this to 2 if you need more and run "go test"
+	debug_mode = 1
+}
+
 func TestMain(m *testing.M) {
 	// Start up a mocked Docker daemon unix socket, to receive calls on.
 	// TODO: do we use httptest.NewServer() here instead? more elegant + we can use non-global variable state to verify received requests...?

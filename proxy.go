@@ -20,11 +20,11 @@ type dockerProxy struct {
 func (s *dockerProxy) runProxy(wg *sync.WaitGroup, ready chan<- int) {
 	l, err := net.Listen("unix", s.ListenSocket)
 	if err != nil {
-		log.Fatalf("%s - Initial UNIX Listen Error: %s\n", app_general_name, err.Error())
+		log.Fatalf("%s -=- Initial UNIX Listen Error: %s\n", app_code_name, err.Error())
 	}
 	sl, err := newStoppableUnixListener(l)
 	if err != nil {
-		log.Fatalf("%s - Stoppable UNIX Listen Error: %s\n", app_general_name, err.Error())
+		log.Fatalf("%s -=- Stoppable UNIX Listen Error: %s\n", app_code_name, err.Error())
 	}
 	s.StoppableListener = sl
 
@@ -43,7 +43,7 @@ func (s *dockerProxy) runProxy(wg *sync.WaitGroup, ready chan<- int) {
 				// Stop channel triggered, unroll our loops.
 				break
 			} else {
-				log.Fatalf("%s - Accept UNIX Conn Error: %s\n", app_general_name, err.Error())
+				log.Fatalf("%s -=- Accept UNIX Conn Error: %s\n", app_code_name, err.Error())
 			}
 		}
 

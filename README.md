@@ -31,7 +31,9 @@ Another approach to this is for the native Docker client to support default labe
 
 You can also apply a custom `cgroup-parent` to all child containers so they are grouped, to avoid OOM collateral damage to your other workloads on your container scheduler managed cluster, and "reserve" system resources via your scheduler. Eg. you may need 256MB for a Jenkins agent, but you might allocate 2048MB and the child containers will use the surplus when spawned within the same parent cgroup.
 
-This will be applied for `/containers/create` API calls only (`docker run` effectively).
+This will be applied for `/containers/create` API calls only (`docker run` effectively), when the `--cgroup-parent` (`-cg`) flag is set.
+
+There is currently no way to define the CGroup name to be used, it is detected automatically. As this process is designed to be run with access to the Docker daemon socket, a `/containers/${id-self}/json` API call is performed and the `CgroupParent` value is used (shared parent for this container + any children). If `CgroupParent` is empty and `--cgroup-parent` is enabled, the `/containers/create` API call will fail with an error.
 
 ## Parent CGroup Container Startup Example
 
@@ -64,9 +66,12 @@ COMMANDS:
      help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --debug, -d                       Debug Mode
-   --dockersocket value, --ds value  The Docker daemon API UNIX socket to connect to (default: "/var/run/docker.sock")
-   --listensocket value, --ls value  The UNIX listen socket for this process, Docker API clients will point at this path (default: "/var/run/docker-ci-proxy.sock")
+   --debug, -d                       Debug Mode [$DCP_DEBUG]
+   --dockersocket value, --ds value  The Docker daemon API UNIX socket to connect to (default: "/var/run/docker.sock") [$DCP_DOCKER_SOCKET]
+   --listensocket value, --ls value  The UNIX listen socket for this process, Docker API clients will point at this path (default: "/var/run/docker-ci-proxy.sock") [$DCP_LISTEN_SOCKET]
+   --cgroupparent, --cp              If enabled, overrides the CgroupParent of create operations to match this container [$DCP_CGROUP_PARENT]
+   --labelname value, --ln value     The Docker label name to apply to resources (default: "Created-Via") [$DCP_LABEL_NAME]
+   --labelvalue value, --lv value    The Docker label value to apply to resources (default: "dockerd-ci-proxy") [$DCP_LABEL_VALUE]
    --help, -h                        show help
    --version, -v                     print the version
 ```
