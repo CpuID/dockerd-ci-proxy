@@ -1,13 +1,22 @@
 version: '2'
 
 services:
+  ci_agent:
+    build:
+      context: ./ci_agent_dev
+    volumes:
+      - "docker-socket-vol:/var/run/docker/"
   dcp:
-    build: .
+    build:
+      context: .
     cgroup_parent: test-cgroup
     environment:
       DCP_DEBUG: "true"
       DCP_CGROUP_PARENT: "true"
+      DCP_LISTEN_SOCKET: "/var/run/docker/docker-ci-proxy.sock"
     volumes:
-      # TODO: get this working
-      #- "./docker-ci-proxy.sock:/var/run/docker-ci-proxy.sock"
+      - "docker-socket-vol:/var/run/docker/"
       - "/var/run/docker.sock:/var/run/docker.sock"
+
+volumes:
+  docker-socket-vol:
