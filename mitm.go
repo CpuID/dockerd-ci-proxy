@@ -143,6 +143,14 @@ func (h *mitmHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.WriteHeader(uresp.StatusCode)
+	if debug_mode >= 1 {
+		log.Printf("%s -=- MITM -- HTTP Status '%d' sent to client.\n", app_code_name, uresp.StatusCode)
+	}
+	// Try flush here before sending the body, incase there is a delay (/wait operations will do this, used within "docker run" calls)
+	w.(http.Flusher).Flush()
+	if debug_mode >= 1 {
+		log.Printf("%s -=- MITM -- Flushed to client.\n", app_code_name)
+	}
 	// Passthrough responses, so that "docker export" operations should be nice and smooth (large payloads)
 	// No modifications are made here anyway.
 	io.Copy(w, uresp.Body)
