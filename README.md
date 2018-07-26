@@ -82,6 +82,10 @@ GLOBAL OPTIONS:
    --version, -v                     print the version
 ```
 
+# Credits
+
+After I almost completed this project, I was hitting issues with `/attach` API calls failing to "upgrade" (using `HTTP/1.1 101 UPGRADED` responses). I then found https://github.com/buildkite/sockguard which looks to attempt to solve at least half of the goals of this project (label resources), but also attempts to perform resources restriction, very cool.
+
 # License
 
 Licensed under the MIT License
