@@ -1,3 +1,14 @@
+# NOT MAINTAINED
+
+*Use [sockguard](https://github.com/buildkite/sockguard) instead*
+
+(As of mid 2018)
+
+-------------------------
+-------------------------
+-------------------------
+-------------------------
+
 # dockerd-ci-proxy
 
 *Docker Daemon UNIX Socket Proxy for CI Child Containers*
